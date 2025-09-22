@@ -39,7 +39,6 @@ export function TabNavigation() {
           </div>
           <div>
             <h1 className="font-semibold text-foreground">Конструктор</h1>
-            <p className="text-xs text-muted-foreground">Создавайте интерфейсы легко</p>
           </div>
         </div>
 

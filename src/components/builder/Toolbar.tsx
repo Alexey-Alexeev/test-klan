@@ -376,9 +376,6 @@ export function Toolbar() {
       </Button>
 
       <div className="ml-auto flex items-center gap-2">
-        <div className="text-xs text-muted-foreground hidden md:block">
-          Двойной клик для редактирования • Delete для удаления
-        </div>
         <Button 
           variant="outline" 
           size="sm" 
