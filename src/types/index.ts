@@ -268,6 +268,7 @@ export interface CanvasState {
   showGrid: boolean;
   isMultiSelecting: boolean;
   selectionBox: { x: number; y: number; width: number; height: number } | null;
+  viewportCenter?: IPosition;
 }
 
 // Templates state

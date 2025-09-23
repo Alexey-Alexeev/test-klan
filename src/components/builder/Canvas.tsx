@@ -7,7 +7,7 @@ import { WidgetRenderer } from './WidgetRenderer';
 import { Ruler } from './Ruler';
 import { Guides } from './Guides';
 
-export function Canvas() {
+export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.RefObject<HTMLDivElement> }) {
   const dispatch = useAppDispatch();
   const { 
     widgets, 
@@ -193,6 +193,15 @@ export function Canvas() {
       document.removeEventListener('mouseup', onUp);
     };
   }, [isResizingCanvas, handleMouseMoveCanvasResize]);
+
+  // Helper: clamp a widget within current canvas size
+  const clampToCanvas = useCallback((x: number, y: number, width: number, height: number) => {
+    const maxX = Math.max(0, canvasSize.width - width);
+    const maxY = Math.max(0, canvasSize.height - height);
+    const clampedX = Math.min(Math.max(0, x), maxX);
+    const clampedY = Math.min(Math.max(0, y), maxY);
+    return { x: clampedX, y: clampedY };
+  }, [canvasSize.width, canvasSize.height]);
 
   return (
     <div ref={rootRef} className="flex-1 relative overflow-hidden bg-gray-50">

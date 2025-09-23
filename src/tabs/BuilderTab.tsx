@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,9 +13,10 @@ import { PropertiesPanel } from '../components/builder/PropertiesPanel';
 
 export function BuilderTab() {
   const dispatch = useAppDispatch();
-  const { widgets } = useAppSelector(state => state.canvas);
+  const { widgets, canvasSize } = useAppSelector(state => state.canvas);
   const { viewMode } = useAppSelector(state => state.app);
   
+  const mainAreaRef = useRef<HTMLDivElement>(null);
   const [jsonValue, setJsonValue] = useState('');
   const [jsonError, setJsonError] = useState('');
 
@@ -39,23 +40,15 @@ export function BuilderTab() {
   };
 
   const handleWidgetClick = (widgetType: string) => {
-    // Добавляем виджет в случайную позицию вокруг центра холста
-    const centerX = 600; // Примерно центр холста
-    const centerY = 400;
-    
-    // Случайное смещение от центра
-    const offsetX = (Math.random() - 0.5) * 200; // ±100px от центра
-    const offsetY = (Math.random() - 0.5) * 200; // ±100px от центра
-    
+    // Добавляем виджет в центр текущего холста
+    const def = widgetDefinitions.find((d) => d.type === widgetType);
+    const defSize = def?.defaultSize || { width: 100, height: 40 };
     const position = {
-      x: Math.max(0, centerX + offsetX),
-      y: Math.max(0, centerY + offsetY)
+      x: Math.max(0, Math.round((canvasSize.width - defSize.width) / 2)),
+      y: Math.max(0, Math.round((canvasSize.height - defSize.height) / 2)),
     };
-    
     const widget = createDefaultWidget(widgetType, position);
-    if (widget) {
-      dispatch(addWidget(widget));
-    }
+    if (widget) dispatch(addWidget(widget));
   };
 
   // Update JSON when widgets change and in JSON mode
@@ -112,9 +105,9 @@ export function BuilderTab() {
         )}
         
         {/* Canvas or JSON editor */}
-        <div className="flex-1 flex flex-col">
+        <div ref={mainAreaRef} className="flex-1 flex flex-col">
           {viewMode === 'design' ? (
-            <Canvas />
+            <Canvas viewportContainerRef={mainAreaRef} />
           ) : (
             <div className="flex-1 p-6 space-y-4">
               <div className="flex justify-between items-center">

@@ -39,7 +39,13 @@ const canvasSlice = createSlice({
       const { id, position } = action.payload;
       const widget = state.widgets.find(w => w.id === id);
       if (widget) {
-        widget.position = position;
+        // Clamp within canvas bounds
+        const maxX = Math.max(0, state.canvasSize.width - widget.size.width);
+        const maxY = Math.max(0, state.canvasSize.height - widget.size.height);
+        widget.position = {
+          x: Math.min(Math.max(0, position.x), maxX),
+          y: Math.min(Math.max(0, position.y), maxY),
+        };
       }
     },
 
@@ -47,7 +53,13 @@ const canvasSlice = createSlice({
       const { id, size } = action.payload;
       const widget = state.widgets.find(w => w.id === id);
       if (widget) {
-        widget.size = size;
+        const newSize = { width: Math.max(1, size.width), height: Math.max(1, size.height) };
+        // Ensure widget stays within canvas after resize
+        const maxX = Math.max(0, state.canvasSize.width - newSize.width);
+        const maxY = Math.max(0, state.canvasSize.height - newSize.height);
+        widget.position.x = Math.min(widget.position.x, maxX);
+        widget.position.y = Math.min(widget.position.y, maxY);
+        widget.size = newSize;
       }
     },
 
@@ -91,6 +103,16 @@ const canvasSlice = createSlice({
     setCanvasSize: (state, action: PayloadAction<{ width: number; height: number }>) => {
       if (!state.isCanvasSizeLocked) {
         state.canvasSize = action.payload;
+        // Clamp all widgets into the new canvas bounds
+        state.widgets.forEach(widget => {
+          const maxX = Math.max(0, state.canvasSize.width - widget.size.width);
+          const maxY = Math.max(0, state.canvasSize.height - widget.size.height);
+          widget.position.x = Math.min(Math.max(0, widget.position.x), maxX);
+          widget.position.y = Math.min(Math.max(0, widget.position.y), maxY);
+          // Optional: shrink oversize widgets to fit
+          if (widget.size.width > state.canvasSize.width) widget.size.width = state.canvasSize.width;
+          if (widget.size.height > state.canvasSize.height) widget.size.height = state.canvasSize.height;
+        });
       }
     },
 
