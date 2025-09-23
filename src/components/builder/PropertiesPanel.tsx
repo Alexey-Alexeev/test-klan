@@ -74,14 +74,29 @@ export function PropertiesPanel() {
     handleUpdate(updates);
   };
 
-  if (!isPropertiesPanelOpen || !localWidget) {
+  if (!isPropertiesPanelOpen) {
     return null;
   }
 
   return (
-    <div className="w-80 bg-white border-l border-border p-4 overflow-y-auto custom-scrollbar">
+    <div className="w-80 h-full bg-white border-l border-border p-4 overflow-y-auto custom-scrollbar">
       <div className="space-y-4">
+        {/* Empty state */}
+        {!localWidget && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Свойства элемента</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Выберите элемент на холсте, чтобы редактировать его свойства.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Widget info */}
+        {localWidget && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Свойства элемента</CardTitle>
@@ -130,8 +145,10 @@ export function PropertiesPanel() {
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* Position and Size */}
+        {localWidget && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Позиция и размер</CardTitle>
@@ -188,9 +205,10 @@ export function PropertiesPanel() {
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* Widget-specific properties */}
-        {localWidget.type === 'button' && (
+        {localWidget && localWidget.type === 'button' && (
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Настройки кнопки</CardTitle>
@@ -225,7 +243,7 @@ export function PropertiesPanel() {
           </Card>
         )}
 
-        {localWidget.type === 'text' && (
+        {localWidget && localWidget.type === 'text' && (
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Настройки текста</CardTitle>
@@ -278,7 +296,7 @@ export function PropertiesPanel() {
           </Card>
         )}
 
-        {localWidget.type === 'container' && (
+        {localWidget && localWidget.type === 'container' && (
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Настройки контейнера</CardTitle>
@@ -340,7 +358,7 @@ export function PropertiesPanel() {
           </Card>
         )}
 
-        {localWidget.type === 'divider' && (
+        {localWidget && localWidget.type === 'divider' && (
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Настройки разделителя</CardTitle>
@@ -385,7 +403,7 @@ export function PropertiesPanel() {
           </Card>
         )}
 
-        {localWidget.type === 'icon' && (
+        {localWidget && localWidget.type === 'icon' && (
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Настройки иконки</CardTitle>
@@ -423,7 +441,7 @@ export function PropertiesPanel() {
           </Card>
         )}
 
-        {localWidget.type === 'badge' && (
+        {localWidget && localWidget.type === 'badge' && (
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Настройки значка</CardTitle>
@@ -477,6 +495,7 @@ export function PropertiesPanel() {
         )}
 
         {/* Style properties */}
+        {localWidget && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Стили</CardTitle>
@@ -581,6 +600,7 @@ export function PropertiesPanel() {
             </div>
           </CardContent>
         </Card>
+        )}
       </div>
     </div>
   );

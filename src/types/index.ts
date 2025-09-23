@@ -258,6 +258,7 @@ export interface CanvasState {
   selectedWidgetId: string | null;
   selectedWidgetIds: string[];
   canvasSize: { width: number; height: number };
+  isCanvasSizeLocked: boolean;
   gridSnap: boolean;
   snapSize: number;
   zoom: number;

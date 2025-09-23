@@ -6,6 +6,7 @@ const initialState: CanvasState = {
   selectedWidgetId: null,
   selectedWidgetIds: [],
   canvasSize: { width: 1200, height: 800 },
+  isCanvasSizeLocked: false,
   gridSnap: true,
   snapSize: 8,
   zoom: 1,
@@ -88,7 +89,13 @@ const canvasSlice = createSlice({
     },
 
     setCanvasSize: (state, action: PayloadAction<{ width: number; height: number }>) => {
-      state.canvasSize = action.payload;
+      if (!state.isCanvasSizeLocked) {
+        state.canvasSize = action.payload;
+      }
+    },
+
+    toggleCanvasSizeLock: (state) => {
+      state.isCanvasSizeLocked = !state.isCanvasSizeLocked;
     },
 
     toggleGridSnap: (state) => {
@@ -233,6 +240,7 @@ export const {
   clearCanvas,
   loadWidgets,
   setCanvasSize,
+  toggleCanvasSizeLock,
   toggleGridSnap,
   setSnapSize,
   setZoom,
