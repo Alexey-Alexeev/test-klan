@@ -390,6 +390,7 @@ export function createDefaultWidget(type: string, position: { x: number; y: numb
     zIndex: 1,
     style: definition.defaultStyle,
     props: definition.defaultProps,
+    zone: undefined,
   };
 
   return baseWidget;

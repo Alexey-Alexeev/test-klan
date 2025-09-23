@@ -79,6 +79,7 @@ export function WidgetsTab() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredWidgets.map((widget) => {
             const Icon = getIcon(widget.icon);
+            const isButton = widget.type === 'button';
             
             return (
               <Card
@@ -90,7 +91,11 @@ export function WidgetsTab() {
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                      <Icon className="h-5 w-5 text-primary" />
+                      {isButton ? (
+                        <Button variant="dsPrimary" className="h-6 px-2 text-[10px]">Кнопка</Button>
+                      ) : (
+                        <Icon className="h-5 w-5 text-primary" />
+                      )}
                     </div>
                     <div>
                       <CardTitle className="text-base">{widget.name}</CardTitle>

@@ -29,6 +29,7 @@ export interface IWidgetBase {
   size: ISize;
   zIndex: number;
   style: IWidgetStyle;
+  zone?: 'header' | 'main' | 'footer';
 }
 
 export interface IButtonWidget extends IWidgetBase {

@@ -72,6 +72,7 @@ export function BuilderTab() {
             <div className="grid grid-cols-2 gap-2">
               {widgetDefinitions.map((widget) => {
                 const IconComponent = icons[widget.icon as keyof typeof icons] as React.ComponentType<any>;
+                const isButton = widget.type === 'button';
                 
                 return (
                   <div
@@ -84,8 +85,12 @@ export function BuilderTab() {
                     className="p-3 border border-border rounded-lg cursor-pointer hover:bg-accent/50 hover:border-primary/50 transition-all duration-200 active:scale-95"
                   >
                     <div className="flex flex-col items-center gap-2 text-center">
-                      {IconComponent && (
-                        <IconComponent className="h-6 w-6 text-muted-foreground" />
+                      {isButton ? (
+                        <Button variant="dsPrimary" className="h-7 px-3 text-[11px]">Кнопка</Button>
+                      ) : (
+                        IconComponent && (
+                          <IconComponent className="h-6 w-6 text-muted-foreground" />
+                        )
                       )}
                       <span className="text-xs font-medium text-foreground">
                         {widget.name}
