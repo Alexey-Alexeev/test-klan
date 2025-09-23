@@ -34,6 +34,7 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
   const [rulerOrigin, setRulerOrigin] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [sizeDraft, setSizeDraft] = useState<{ width: string; height: string }>({ width: '', height: '' });
   const [hoveredZone, setHoveredZone] = useState<'header' | 'main' | 'footer' | null>(null);
+  const [isDraggingWidget, setIsDraggingWidget] = useState(false);
 
   useEffect(() => {
     setSizeDraft({ width: String(Math.round(canvasSize.width)), height: String(Math.round(canvasSize.height)) });
@@ -76,9 +77,9 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
 
       const widget = createDefaultWidget(widgetType, position);
       if (widget) {
-        // определить зону по направляющим (как на макете)
-        const headerOffset = 16; // единицы холста
-        const footerOffset = 16;
+        // определить зону по направляющим (увеличенные зоны)
+        const headerOffset = 40; // увеличили зону header
+        const footerOffset = 40; // увеличили зону footer
         const barHeight = 4;
         const footerBarTop = canvasSize.height - footerOffset - barHeight;
         const headerBarBottom = headerOffset + barHeight;
@@ -87,6 +88,7 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
         dispatch(addWidget(widget));
       }
     }
+    setIsDraggingWidget(false);
     setHoveredZone(null);
   }, [dispatch, zoom, gridSnap, snapSize, panOffset]);
 
@@ -95,12 +97,13 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
     if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
     const yCanvas = (e.clientY - rect.top - (panOffset?.y || 0)) / zoom;
-    const headerOffset = 16;
-    const footerOffset = 16;
+    const headerOffset = 40; // увеличенная зона header
+    const footerOffset = 40; // увеличенная зона footer
     const barHeight = 4;
     const footerBarTop = canvasSize.height - footerOffset - barHeight;
     const headerBarBottom = headerOffset + barHeight;
     const zone = yCanvas <= headerBarBottom ? 'header' : (yCanvas >= footerBarTop ? 'footer' : 'main');
+    setIsDraggingWidget(true);
     setHoveredZone(zone);
   }, [panOffset, zoom, canvasSize.height]);
 
@@ -151,8 +154,8 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
     // приводим к "логическим" координатам холста (учитываем zoom)
     const yCanvas = (e.clientY - rect.top) / zoom;
   
-    const headerOffset = 16; // единицы холста, как у вас
-    const footerOffset = 16;
+    const headerOffset = 40; // увеличенная зона header
+    const footerOffset = 40; // увеличенная зона footer
     const barHeight = 4;
     const headerBarBottom = headerOffset + barHeight;
     const footerBarTop = canvasSize.height - footerOffset - barHeight;
@@ -165,6 +168,7 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
   
   const handleCanvasMouseLeave = useCallback(() => {
     setHoveredZone(null);
+    setIsDraggingWidget(false);
   }, []);
 
   useEffect(() => {
@@ -336,8 +340,8 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
           {/* Зоны как на макете: тонкие направляющие и подписи справа */}
           <div className="absolute inset-0 pointer-events-none" aria-hidden>
             {(() => {
-              const headerOffsetPx = 16 * zoom;
-              const footerOffsetPx = 16 * zoom;
+              const headerOffsetPx = 40 * zoom; // увеличенная зона header
+              const footerOffsetPx = 40 * zoom; // увеличенная зона footer
               const barHeightPx = Math.max(4, 4 * zoom);
               const sideInsetPx = Math.max(10, 12 * zoom);
               const rightShortenPx = Math.max(24, 28 * zoom);
@@ -347,11 +351,11 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
                 <>
                   {/* Header bar */}
                   <div className="absolute" style={{ top: headerBarTopPx, height: barHeightPx, left: sideInsetPx, right: rightShortenPx }}>
-                    <div className="w-full h-full rounded-full" style={{ background: hoveredZone === 'header' ? '#f59e0b' : '#fde047' }} />
+                    <div className="w-full h-full rounded-full transition-colors duration-200" style={{ background: hoveredZone === 'header' ? '#f59e0b' : '#fde047' }} />
                   </div>
                   {/* Footer bar */}
                   <div className="absolute" style={{ top: footerBarTopPx, height: barHeightPx, left: sideInsetPx, right: rightShortenPx }}>
-                    <div className="w-full h-full rounded-full" style={{ background: hoveredZone === 'footer' ? '#ef4444' : '#f87171' }} />
+                    <div className="w-full h-full rounded-full transition-colors duration-200" style={{ background: hoveredZone === 'footer' ? '#ef4444' : '#f87171' }} />
                   </div>
                 </>
               );
@@ -364,14 +368,14 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
 
           {/* Labels outside: aligned to outer bezel right edge */}
           <div className="absolute inset-0 pointer-events-none" aria-hidden={false}>
-            <div className="absolute pointer-events-auto" style={{ top: (16 * zoom) - 10, right: -56 }} onMouseEnter={() => setHoveredZone('header')} onMouseLeave={() => setHoveredZone(null)}>
-              <div className={`inline-flex items-center h-6 px-2 rounded bg-white shadow border text-[11px] ${hoveredZone === 'header' ? 'border-primary text-primary' : 'text-gray-600'}`}>Header</div>
+            <div className="absolute pointer-events-auto transition-all duration-200" style={{ top: (40 * zoom) - 10, right: -56 }} onMouseEnter={() => setHoveredZone('header')} onMouseLeave={() => setHoveredZone(null)}>
+              <div className={`inline-flex items-center h-6 px-2 rounded bg-white shadow border text-[11px] transition-all duration-200 ${hoveredZone === 'header' ? 'border-amber-500 text-amber-600 bg-amber-50 scale-105' : 'text-gray-600'}`}>Header</div>
             </div>
             <div className="absolute pointer-events-auto" style={{ top: (canvasSize.height * zoom) / 2 - 10, right: -56 }} onMouseEnter={() => setHoveredZone('main')} onMouseLeave={() => setHoveredZone(null)}>
-              <div className={`inline-flex items-center h-6 px-2 rounded bg-white shadow border text-[11px] ${hoveredZone === 'main' ? 'border-primary text-primary' : 'text-gray-600'}`}>Main</div>
+              <div className={`inline-flex items-center h-6 px-2 rounded bg-white shadow border text-[11px] transition-all duration-200 ${hoveredZone === 'main' ? 'border-blue-500 text-blue-600 bg-blue-50 scale-105' : 'text-gray-600'}`}>Main</div>
             </div>
-            <div className="absolute pointer-events-auto" style={{ bottom: (16 * zoom) - 10, right: -56 }} onMouseEnter={() => setHoveredZone('footer')} onMouseLeave={() => setHoveredZone(null)}>
-              <div className={`inline-flex items-center h-6 px-2 rounded bg-white shadow border text-[11px] ${hoveredZone === 'footer' ? 'border-primary text-primary' : 'text-gray-600'}`}>Footer</div>
+            <div className="absolute pointer-events-auto transition-all duration-200" style={{ bottom: (40 * zoom) - 10, right: -56 }} onMouseEnter={() => setHoveredZone('footer')} onMouseLeave={() => setHoveredZone(null)}>
+              <div className={`inline-flex items-center h-6 px-2 rounded bg-white shadow border text-[11px] transition-all duration-200 ${hoveredZone === 'footer' ? 'border-red-500 text-red-600 bg-red-50 scale-105' : 'text-gray-600'}`}>Footer</div>
             </div>
           </div>
 
@@ -394,6 +398,8 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
             onDragOver={handleDragOver}
             onMouseDown={handleMouseDown}
             onWheel={handleWheel}
+            onMouseMove={handleCanvasMouseMove}
+            onMouseLeave={handleCanvasMouseLeave}
           >
           {/* Status bar */}
           <div className="absolute top-0 left-0 right-0 h-7 px-4 flex items-center justify-between text-[11px] text-black/90 select-none pointer-events-none">
@@ -421,6 +427,43 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
               </div>
             </div>
           </div>
+          {/* Zone overlays for drag feedback */}
+          {isDraggingWidget && (
+            <>
+              {/* Header zone overlay */}
+              <div 
+                className={`absolute left-0 right-0 top-0 transition-all duration-200 pointer-events-none ${
+                  hoveredZone === 'header' 
+                    ? 'bg-amber-200/40 border-2 border-amber-400 border-dashed' 
+                    : 'bg-amber-100/20 border border-amber-300 border-dashed'
+                }`}
+                style={{ height: 40 * zoom }}
+              >
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className={`text-xs font-medium transition-all duration-200 ${
+                    hoveredZone === 'header' ? 'text-amber-700 scale-110' : 'text-amber-600'
+                  }`}>Header Zone</span>
+                </div>
+              </div>
+              
+              {/* Footer zone overlay */}
+              <div 
+                className={`absolute left-0 right-0 bottom-0 transition-all duration-200 pointer-events-none ${
+                  hoveredZone === 'footer' 
+                    ? 'bg-red-200/40 border-2 border-red-400 border-dashed' 
+                    : 'bg-red-100/20 border border-red-300 border-dashed'
+                }`}
+                style={{ height: 40 * zoom }}
+              >
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className={`text-xs font-medium transition-all duration-200 ${
+                    hoveredZone === 'footer' ? 'text-red-700 scale-110' : 'text-red-600'
+                  }`}>Footer Zone</span>
+                </div>
+              </div>
+            </>
+          )}
+          
           {widgets.map((widget) => (
             <WidgetRenderer
               key={widget.id}

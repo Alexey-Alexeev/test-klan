@@ -45,7 +45,7 @@ export function BuilderTab() {
     const defSize = def?.defaultSize || { width: 100, height: 40 };
     const position = {
       x: Math.max(0, Math.round((canvasSize.width - defSize.width) / 2)),
-      y: Math.max(0, Math.round((canvasSize.height - defSize.height) / 2)),
+      y: Math.max(44, Math.round((canvasSize.height - defSize.height) / 2)), // Размещаем в main зоне
     };
     const widget = createDefaultWidget(widgetType, position);
     if (widget) dispatch(addWidget(widget));
