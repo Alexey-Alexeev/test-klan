@@ -7,11 +7,18 @@ export function ButtonWidget({ widget, isSelected, onSelect }: WidgetComponentPr
   const getVariant = () => {
     switch (buttonWidget.props.variant) {
       case 'primary':
-        return 'default';
+        return 'dsPrimary';
       case 'secondary':
         return 'secondary';
-      case 'outline':
-        return 'outline';
+      case 'accent':
+      case 'pay':
+      case 'success':
+      case 'danger':
+      case 'secondaryDefault':
+      case 'secondaryAccent':
+      case 'secondaryPay':
+      case 'ghost':
+        return buttonWidget.props.variant as any;
       default:
         return 'default';
     }
@@ -24,11 +31,9 @@ export function ButtonWidget({ widget, isSelected, onSelect }: WidgetComponentPr
       onClick={() => onSelect?.(widget.id)}
       className={`w-full h-full ${isSelected ? 'ring-2 ring-primary' : ''}`}
       style={{
-        ...buttonWidget.style,
+        ...( (() => { const { backgroundColor: _bg, color: _color, ...rest } = (buttonWidget.style || {}) as any; return rest; })() ),
         fontSize: buttonWidget.style.fontSize ? `${buttonWidget.style.fontSize}px` : undefined,
         fontWeight: buttonWidget.style.fontWeight,
-        backgroundColor: buttonWidget.style.backgroundColor || (buttonWidget.props.variant === 'primary' ? 'hsl(var(--primary))' : undefined),
-        color: buttonWidget.style.color || (buttonWidget.props.variant === 'primary' ? 'white' : undefined),
         borderRadius: buttonWidget.style.borderRadius ? `${buttonWidget.style.borderRadius}px` : undefined,
       }}
     >

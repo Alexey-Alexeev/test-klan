@@ -35,7 +35,7 @@ export interface IButtonWidget extends IWidgetBase {
   type: 'button';
   props: {
     text: string;
-    variant: 'primary' | 'secondary' | 'outline';
+    variant: 'primary' | 'secondary' | 'accent' | 'pay' | 'success' | 'danger' | 'secondaryDefault' | 'secondaryAccent' | 'secondaryPay' | 'ghost';
     disabled: boolean;
     onClick?: string; // Action identifier
   };

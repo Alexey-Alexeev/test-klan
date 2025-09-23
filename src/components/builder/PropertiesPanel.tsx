@@ -233,9 +233,61 @@ export function PropertiesPanel() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="primary">Основная</SelectItem>
-                    <SelectItem value="secondary">Вторичная</SelectItem>
-                    <SelectItem value="outline">Контур</SelectItem>
+                    <SelectItem value="primary">
+                      <div className="flex items-center gap-2">
+                        <span>Primary</span>
+                        <Button variant="dsPrimary" className="h-6 px-2 text-[10px] pointer-events-none">Кнопка</Button>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="accent">
+                      <div className="flex items-center gap-2">
+                        <span>Accent</span>
+                        <Button variant="accent" className="h-6 px-2 text-[10px] pointer-events-none">Кнопка</Button>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="pay">
+                      <div className="flex items-center gap-2">
+                        <span>Pay</span>
+                        <Button variant="pay" className="h-6 px-2 text-[10px] pointer-events-none">Кнопка</Button>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="success">
+                      <div className="flex items-center gap-2">
+                        <span>Success</span>
+                        <Button variant="success" className="h-6 px-2 text-[10px] pointer-events-none">Кнопка</Button>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="danger">
+                      <div className="flex items-center gap-2">
+                        <span>Danger</span>
+                        <Button variant="danger" className="h-6 px-2 text-[10px] pointer-events-none">Кнопка</Button>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="secondaryDefault">
+                      <div className="flex items-center gap-2">
+                        <span>Default secondary</span>
+                        <Button variant="secondaryDefault" className="h-6 px-2 text-[10px] pointer-events-none">Кнопка</Button>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="secondaryAccent">
+                      <div className="flex items-center gap-2">
+                        <span>Accent secondary</span>
+                        <Button variant="secondaryAccent" className="h-6 px-2 text-[10px] pointer-events-none">Кнопка</Button>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="secondaryPay">
+                      <div className="flex items-center gap-2">
+                        <span>Pay secondary</span>
+                        <Button variant="secondaryPay" className="h-6 px-2 text-[10px] pointer-events-none">Кнопка</Button>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="ghost">
+                      <div className="flex items-center gap-2">
+                        <span>Ghost</span>
+                        <Button variant="ghost" className="h-6 px-2 text-[10px] pointer-events-none">Кнопка</Button>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="secondary">Secondary (старый)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

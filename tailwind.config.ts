@@ -70,7 +70,8 @@ export default {
         'lg': 'var(--shadow-lg)',
       },
       fontFamily: {
-        'manrope': ['Manrope', 'system-ui', 'sans-serif'],
+        'manrope': ['Manrope Cut 008', 'system-ui', 'sans-serif'],
+        'sans': ['var(--app-font)', 'system-ui', 'sans-serif'],
       },
       transitionTimingFunction: {
         'smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',

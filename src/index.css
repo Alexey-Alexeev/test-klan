@@ -2,6 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Local fonts */
+@font-face {
+  font-family: 'Manrope Cut 008';
+  src: url('/font/Manrope_Cut_008-Medium.woff2') format('woff2'),
+       url('/font/Manrope_Cut_008-Medium.woff') format('woff'),
+       url('/font/Manrope_Cut_008-Medium.ttf') format('truetype'),
+       url('/font/Manrope_Cut_008-Medium.eot');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Manrope Cut 008';
+  src: url('/font/Manrope_Cut_008-ExtraBold.woff2') format('woff2'),
+       url('/font/Manrope_Cut_008-ExtraBold.woff') format('woff'),
+       url('/font/Manrope_Cut_008-ExtraBold.ttf') format('truetype'),
+       url('/font/Manrope_Cut_008-ExtraBold.eot');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --app-font: 'Manrope Cut 008', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+html, body, #root {
+  font-family: var(--app-font);
+}
+
 
 @layer base {
   :root {

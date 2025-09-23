@@ -9,12 +9,24 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
+        // App primary (unchanged theme primary)
         default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        // Extra
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        // Design system colors
+        dsPrimary: "bg-[#141414] text-white hover:bg-[#141414]/90",
+        accent: "bg-[#00AAFF] text-white hover:bg-[#00AAFF]/90",
+        pay: "bg-[#965EEB] text-white hover:bg-[#965EEB]/90",
+        success: "bg-[#02D15C] text-white hover:bg-[#02D15C]/90",
+        danger: "bg-[#FF4053] text-white hover:bg-[#FF4053]/90",
+        // Secondary previews (design system)
+        secondaryDefault: "bg-[#F2F1F0] text-[#000000] hover:bg-[#F2F1F0]/90",
+        secondaryAccent: "bg-[#CFEDFF] text-[#008AED] hover:bg-[#CFEDFF]/90",
+        secondaryPay: "bg-[#E9DDFD] text-[#8C4FE8] hover:bg-[#E9DDFD]/90",
       },
       size: {
         default: "h-10 px-4 py-2",

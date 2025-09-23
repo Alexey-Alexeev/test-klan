@@ -1,16 +1,15 @@
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, MousePointer, Type, Edit3, Image, Layout } from 'lucide-react';
+import { Search } from 'lucide-react';
+import * as icons from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { widgetDefinitions } from '../lib/widgetDefaults';
 import { WidgetDefinition } from '../types';
 
-const iconMap = {
-  MousePointer,
-  Type,
-  Edit3,
-  Image,
-  Layout,
+const getIcon = (name: string): React.ComponentType<any> => {
+  const Icon = icons[name as keyof typeof icons] as unknown as React.ComponentType<any> | undefined;
+  return Icon || (icons.Box as unknown as React.ComponentType<any>);
 };
 
 export function WidgetsTab() {
@@ -79,7 +78,7 @@ export function WidgetsTab() {
         {/* Widgets grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredWidgets.map((widget) => {
-            const Icon = iconMap[widget.icon as keyof typeof iconMap];
+            const Icon = getIcon(widget.icon);
             
             return (
               <Card
@@ -105,9 +104,32 @@ export function WidgetsTab() {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <CardDescription className="text-sm">
+                  <CardDescription className="text-sm mb-3">
                     {widget.description}
                   </CardDescription>
+
+                  {widget.type === 'button' && (
+                    <div className="space-y-2">
+                      <div className="text-xs font-medium text-muted-foreground">Основные</div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="dsPrimary" className="h-8 px-3 text-xs">Primary</Button>
+                        <Button variant="accent" className="h-8 px-3 text-xs">Accent</Button>
+                        <Button variant="pay" className="h-8 px-3 text-xs">Pay</Button>
+                        <Button variant="success" className="h-8 px-3 text-xs">Success</Button>
+                        <Button variant="danger" className="h-8 px-3 text-xs">Danger</Button>
+                      </div>
+                      <div className="text-xs font-medium text-muted-foreground mt-2">Второстепенные</div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="secondaryDefault" className="h-8 px-3 text-xs">Default secondary</Button>
+                        <Button variant="secondaryAccent" className="h-8 px-3 text-xs">Accent secondary</Button>
+                        <Button variant="secondaryPay" className="h-8 px-3 text-xs">Pay secondary</Button>
+                      </div>
+                      <div className="text-xs font-medium text-muted-foreground mt-2">Третичные</div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="ghost" className="h-8 px-3 text-xs">Ghost</Button>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );
