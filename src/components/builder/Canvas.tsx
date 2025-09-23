@@ -1,4 +1,5 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
+import { Input } from '@/components/ui/input';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { selectWidget, addWidget, setPanOffset, setZoom, setCanvasSize, toggleCanvasSizeLock } from '../../features/canvas/canvasSlice';
 import { createDefaultWidget } from '../../lib/widgetDefaults';
@@ -23,12 +24,34 @@ export function Canvas() {
   } = useAppSelector(state => state.canvas);
   
   const canvasRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPanning, setIsPanning] = useState(false);
   const [lastPanPoint, setLastPanPoint] = useState({ x: 0, y: 0 });
   const [isResizingCanvas, setIsResizingCanvas] = useState(false);
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [resizeDirection, setResizeDirection] = useState<'e' | 's' | 'se' | null>(null);
+  const [rulerOrigin, setRulerOrigin] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [sizeDraft, setSizeDraft] = useState<{ width: string; height: string }>({ width: '', height: '' });
+
+  useEffect(() => {
+    setSizeDraft({ width: String(Math.round(canvasSize.width)), height: String(Math.round(canvasSize.height)) });
+  }, [canvasSize.width, canvasSize.height]);
+
+  const commitSizeFromDraft = useCallback(() => {
+    if (isCanvasSizeLocked) return;
+    let w = parseInt(sizeDraft.width, 10);
+    let h = parseInt(sizeDraft.height, 10);
+    if (!Number.isFinite(w)) w = canvasSize.width;
+    if (!Number.isFinite(h)) h = canvasSize.height;
+    w = Math.max(200, w);
+    h = Math.max(300, h);
+    if (gridSnap) {
+      w = Math.round(w / snapSize) * snapSize;
+      h = Math.round(h / snapSize) * snapSize;
+    }
+    dispatch(setCanvasSize({ width: w, height: h }));
+  }, [dispatch, sizeDraft, isCanvasSizeLocked, canvasSize.width, canvasSize.height, gridSnap, snapSize]);
 
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -110,6 +133,27 @@ export function Canvas() {
     }
   }, [isPanning, isResizingCanvas, handleMouseMove, handleMouseUp]);
 
+  // Keep rulers' origin aligned with the canvas screen position
+  useEffect(() => {
+    const updateOrigin = () => {
+      if (!canvasRef.current || !rootRef.current) return;
+      const canvasRect = canvasRef.current.getBoundingClientRect();
+      const rootRect = rootRef.current.getBoundingClientRect();
+      setRulerOrigin({ x: canvasRect.left - rootRect.left, y: canvasRect.top - rootRect.top });
+    };
+    updateOrigin();
+    const handleResize = () => updateOrigin();
+    window.addEventListener('resize', handleResize);
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('scroll', updateOrigin, { passive: true });
+    }
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (container) container.removeEventListener('scroll', updateOrigin as any);
+    };
+  }, [zoom, panOffset, canvasSize, showRulers]);
+
   // Resize canvas handlers
   const onCanvasResizeMouseDown = useCallback((e: React.MouseEvent, direction: 'e' | 's' | 'se' = 'se') => {
     e.stopPropagation();
@@ -151,12 +195,12 @@ export function Canvas() {
   }, [isResizingCanvas, handleMouseMoveCanvasResize]);
 
   return (
-    <div className="flex-1 relative overflow-hidden bg-gray-50">
+    <div ref={rootRef} className="flex-1 relative overflow-hidden bg-gray-50">
       {/* Rulers */}
       {showRulers && (
         <>
-          <Ruler orientation="horizontal" zoom={zoom} panOffset={panOffset} />
-          <Ruler orientation="vertical" zoom={zoom} panOffset={panOffset} />
+          <Ruler orientation="horizontal" zoom={zoom} origin={rulerOrigin} />
+          <Ruler orientation="vertical" zoom={zoom} origin={rulerOrigin} />
         </>
       )}
       
@@ -174,7 +218,30 @@ export function Canvas() {
         {/* Toolbar above smartphone (outside canvas) */}
         <div className="sticky top-0 z-30 w-full flex items-center justify-center py-2">
           <div className="inline-flex items-center gap-3 rounded-md bg-white/80 backdrop-blur px-3 py-1 shadow border border-gray-200">
-            <span className="text-xs font-medium text-gray-700">{Math.round(canvasSize.width)} × {Math.round(canvasSize.height)} px</span>
+            <div className="flex items-center gap-2">
+              <Input
+                className="h-7 w-20 text-xs"
+                type="number"
+                value={sizeDraft.width}
+                disabled={isCanvasSizeLocked}
+                onChange={(e) => setSizeDraft((p) => ({ ...p, width: e.target.value }))}
+                onBlur={commitSizeFromDraft}
+                onKeyDown={(e) => { if (e.key === 'Enter') { commitSizeFromDraft(); } }}
+                aria-label="Ширина холста"
+              />
+              <span className="text-xs text-gray-700">×</span>
+              <Input
+                className="h-7 w-20 text-xs"
+                type="number"
+                value={sizeDraft.height}
+                disabled={isCanvasSizeLocked}
+                onChange={(e) => setSizeDraft((p) => ({ ...p, height: e.target.value }))}
+                onBlur={commitSizeFromDraft}
+                onKeyDown={(e) => { if (e.key === 'Enter') { commitSizeFromDraft(); } }}
+                aria-label="Высота холста"
+              />
+              <span className="text-[10px] text-gray-500">px</span>
+            </div>
             <button
               type="button"
               className="text-xs px-2 py-1 rounded bg-gray-900 text-white hover:bg-gray-800 transition"

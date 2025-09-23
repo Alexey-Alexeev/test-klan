@@ -4,36 +4,31 @@ import { IPosition } from '../../types';
 interface RulerProps {
   orientation: 'horizontal' | 'vertical';
   zoom: number;
-  panOffset: IPosition;
+  origin: IPosition; // canvas screen top-left in container pixels
 }
 
-export function Ruler({ orientation, zoom, panOffset }: RulerProps) {
+export function Ruler({ orientation, zoom, origin }: RulerProps) {
   const rulerSize = 20;
-  const tickInterval = 50; // pixels between major ticks
-  const minorTickInterval = 10; // pixels between minor ticks
+  const tickInterval = 50; // canvas units between major ticks
+  const minorTickInterval = 10; // canvas units between minor ticks
 
   const ticks = useMemo(() => {
-    const ticks = [];
-    const offsetX = panOffset?.x || 0;
-    const offsetY = panOffset?.y || 0;
-    const start = orientation === 'horizontal' ? -offsetX : -offsetY;
-    const end = start + (orientation === 'horizontal' ? window.innerWidth : window.innerHeight);
-    
-    for (let i = Math.floor(start / tickInterval) * tickInterval; i <= end; i += minorTickInterval) {
-      const isMajor = i % tickInterval === 0;
-      const position = i + (orientation === 'horizontal' ? offsetX : offsetY);
-      
-      if (position >= 0) {
-        ticks.push({
-          position,
-          value: Math.round(i / zoom),
-          isMajor,
-        });
-      }
+    const ticks = [] as Array<{ position: number; value: number; isMajor: boolean }>;
+    const containerLength = orientation === 'horizontal' ? window.innerWidth : window.innerHeight;
+    const originPx = orientation === 'horizontal' ? (origin?.x || 0) : (origin?.y || 0);
+    const minorStepPx = minorTickInterval * zoom; // convert canvas units to pixels
+
+    // find the first tick index such that position >= 0
+    const firstIndex = Math.ceil((0 - originPx) / minorStepPx);
+    let positionPx = originPx + firstIndex * minorStepPx;
+    while (positionPx <= containerLength) {
+      const canvasValue = Math.round((positionPx - originPx) / zoom);
+      const isMajor = canvasValue % tickInterval === 0;
+      ticks.push({ position: positionPx, value: canvasValue, isMajor });
+      positionPx += minorStepPx;
     }
-    
     return ticks;
-  }, [orientation, panOffset, zoom]);
+  }, [orientation, zoom, origin]);
 
   if (orientation === 'horizontal') {
     return (
