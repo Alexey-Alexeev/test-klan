@@ -301,6 +301,32 @@ export function Canvas() {
             onMouseDown={handleMouseDown}
             onWheel={handleWheel}
           >
+          {/* Status bar */}
+          <div className="absolute top-0 left-0 right-0 h-7 px-4 flex items-center justify-between text-[11px] text-black/90 select-none pointer-events-none">
+            <div className="font-semibold tracking-wide">9:41</div>
+            <div className="flex items-center gap-2">
+              {/* Cellular bars */}
+              <div className="flex items-end gap-[2px]" aria-hidden>
+                <span className="block w-[2px] h-[6px] bg-black/80 rounded-sm" />
+                <span className="block w-[2px] h-[8px] bg-black/80 rounded-sm" />
+                <span className="block w-[2px] h-[10px] bg-black/80 rounded-sm" />
+                <span className="block w-[2px] h-[12px] bg-black/80 rounded-sm" />
+              </div>
+              {/* Wi‑Fi */}
+              <div className="relative w-[16px] h-[12px]" aria-hidden>
+                <span className="absolute inset-x-0 bottom-0 h-[2px] bg-black/80 rounded-sm" />
+                <span className="absolute left-1 right-1 bottom-[3px] h-[2px] bg-black/70 rounded-sm" />
+                <span className="absolute left-2 right-2 bottom-[6px] h-[2px] bg-black/50 rounded-sm" />
+              </div>
+              {/* Battery */}
+              <div className="flex items-center gap-[2px]" aria-hidden>
+                <div className="relative w-[22px] h-[12px] rounded-[3px] border border-black/80">
+                  <div className="absolute inset-[2px] bg-black/80 rounded-[2px]" />
+                </div>
+                <div className="w-[2px] h-[6px] bg-black/80 rounded-sm" />
+              </div>
+            </div>
+          </div>
           {widgets.map((widget) => (
             <WidgetRenderer
               key={widget.id}

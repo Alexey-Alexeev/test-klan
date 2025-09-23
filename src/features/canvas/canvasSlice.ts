@@ -8,7 +8,7 @@ const initialState: CanvasState = {
   canvasSize: { width: 1200, height: 800 },
   isCanvasSizeLocked: false,
   gridSnap: true,
-  snapSize: 8,
+  snapSize: 2,
   zoom: 1,
   panOffset: { x: 0, y: 0 },
   showRulers: true,
