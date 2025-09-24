@@ -21,12 +21,13 @@ interface TreeNodeProps {
   onDelete: (id: string) => void;
   onMoveToContainer?: (widgetId: string, containerId: string) => void;
   onMoveToRoot?: (widgetId: string) => void;
+  onRename?: (widgetId: string, newName: string) => void;
   isExpandable: boolean;
   isExpanded: boolean;
   onToggleExpand: (id: string) => void;
 }
 
-const TreeNode: React.FC<TreeNodeProps> = ({
+const TreeNode: React.FC<TreeNodeProps & { allWidgets: IWidget[] }> = ({
   widget,
   level,
   isSelected,
@@ -34,12 +35,16 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   onDelete,
   onMoveToContainer,
   onMoveToRoot,
+  onRename,
   isExpandable,
   isExpanded,
   onToggleExpand,
+  allWidgets,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState('');
   const isRootNode = widget.id === 'root';
   
   const getWidgetIcon = (type: string) => {
@@ -69,20 +74,23 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     return icons[type] || '📄';
   };
 
-  const getWidgetName = (widget: IWidget) => {
+  const getWidgetName = (widget: IWidget, allWidgets: IWidget[] = []) => {
     switch ((widget as any).type) {
       case 'button':
-        return `Button: ${(widget as any).props.text || 'Button'}`;
+        return `${(widget as any).props.text || 'Button'}`;
       case 'text':
-        return `Text: ${(widget as any).props.content || 'Text'}`;
+        return `${(widget as any).props.content || 'Text'}`;
       case 'image':
-        return `Image: ${(widget as any).props.alt || 'Image'}`;
+        return `${(widget as any).props.alt || 'Image'}`;
       case 'card':
-        return `Card: ${(widget as any).props.title || 'Card'}`;
+        return `${(widget as any).props.title || 'Card'}`;
       case 'container':
         const containerWidget = widget as any;
         const childCount = containerWidget.props.children?.length || 0;
-        return `Container (${childCount} elements)`;
+        // Count containers with same type to add numbering
+        const containerCount = allWidgets.filter(w => w.type === 'container').length;
+        const containerIndex = allWidgets.filter(w => w.type === 'container').findIndex(w => w.id === widget.id) + 1;
+        return containerCount > 1 ? `Container ${containerIndex}` : 'Container';
       case 'root':
         return `Root component`;
       default:
@@ -133,7 +141,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   return (
     <div className="select-none">
       <div
-        className={`flex items-center gap-2 py-1 px-2 rounded transition-colors ${
+        className={`flex items-center gap-2 py-2 px-3 rounded transition-colors ${
           isRootNode
             ? isDragOver
               ? 'bg-blue-100 border border-blue-300'
@@ -146,12 +154,18 @@ const TreeNode: React.FC<TreeNodeProps> = ({
                   ? 'bg-blue-100 border-2 border-blue-300'
                   : 'hover:bg-muted/50'
         } ${isRootNode ? 'cursor-default font-medium' : 'cursor-pointer group'}`}
-        style={{ paddingLeft: `${level * 16 + 8}px` }}
+        style={{ paddingLeft: `${level * 20 + 12}px` }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onClick={() => {
           if (!isRootNode) {
             onSelect(widget.id);
+          }
+        }}
+        onDoubleClick={() => {
+          if (!isRootNode && onRename) {
+            setIsEditing(true);
+            setEditValue(getWidgetName(widget, allWidgets));
           }
         }}
         draggable={!isRootNode}
@@ -179,17 +193,37 @@ const TreeNode: React.FC<TreeNodeProps> = ({
         <span className="text-sm">{getWidgetIcon(widget.type)}</span>
 
         {/* Widget name */}
-        <span className={`flex-1 text-sm truncate ${isRootNode ? 'font-medium' : ''}`}>
-          {getWidgetName(widget)}
-        </span>
-
-        {/* Widget type badge */}
-        {isRootNode ? (
-          <Badge variant="outline" className="text-xs">Canvas</Badge>
+        {isEditing ? (
+          <input
+            type="text"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={() => {
+              if (onRename && editValue.trim()) {
+                onRename(widget.id, editValue.trim());
+              }
+              setIsEditing(false);
+              setEditValue('');
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                if (onRename && editValue.trim()) {
+                  onRename(widget.id, editValue.trim());
+                }
+                setIsEditing(false);
+                setEditValue('');
+              } else if (e.key === 'Escape') {
+                setIsEditing(false);
+                setEditValue('');
+              }
+            }}
+            className="flex-1 text-sm bg-transparent border-none outline-none px-1 py-0"
+            autoFocus
+          />
         ) : (
-          <Badge variant="secondary" className="text-xs">
-            {widget.type}
-          </Badge>
+          <span className={`flex-1 text-sm ${isRootNode ? 'font-medium' : ''}`}>
+            {getWidgetName(widget, allWidgets)}
+          </span>
         )}
 
         {/* Actions */}
@@ -223,7 +257,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
 export const ComponentsTree: React.FC = () => {
   const dispatch = useAppDispatch();
   const { widgets, selectedWidgetId } = useAppSelector(state => state.canvas);
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set(['root']));
 
   const handleSelect = (id: string) => {
     dispatch(selectWidget(id));
@@ -234,16 +268,36 @@ export const ComponentsTree: React.FC = () => {
   };
 
   const handleToggleExpand = (id: string) => {
+    // Auto-expand all containers by default
     setExpandedNodes(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
+      // Always keep root expanded
+      newSet.add('root');
+      // Auto-expand all containers
+      widgets.forEach(widget => {
+        if (widget.type === 'container') {
+          newSet.add(widget.id);
+        }
+      });
       return newSet;
     });
   };
+
+  // Auto-expand all containers when widgets change
+  useEffect(() => {
+    setExpandedNodes(prev => {
+      const newSet = new Set(prev);
+      // Always keep root expanded
+      newSet.add('root');
+      // Auto-expand all containers
+      widgets.forEach(widget => {
+        if (widget.type === 'container') {
+          newSet.add(widget.id);
+        }
+      });
+      return newSet;
+    });
+  }, [widgets]);
 
   const detachFromParent = (widgetId: string) => {
     const widget = widgets.find(w => w.id === widgetId);
@@ -306,6 +360,34 @@ export const ComponentsTree: React.FC = () => {
   const handleMoveToRoot = (widgetId: string) => {
     detachFromParent(widgetId);
     moveWidgetToParent(widgetId, null);
+  };
+
+  const handleRename = (widgetId: string, newName: string) => {
+    const widget = widgets.find(w => w.id === widgetId);
+    if (!widget) return;
+
+    // Update widget properties based on type
+    const updates: any = {};
+    
+    switch (widget.type) {
+      case 'button':
+        updates.props = { ...(widget as any).props, text: newName };
+        break;
+      case 'text':
+        updates.props = { ...(widget as any).props, content: newName };
+        break;
+      case 'image':
+        updates.props = { ...(widget as any).props, alt: newName };
+        break;
+      case 'card':
+        updates.props = { ...(widget as any).props, title: newName };
+        break;
+      default:
+        // For other types, we could add a custom name property
+        return;
+    }
+
+    dispatch(updateWidget({ id: widgetId, updates }));
   };
 
   // Handle Delete key for any selected widget
@@ -377,9 +459,11 @@ export const ComponentsTree: React.FC = () => {
             onDelete={handleDelete}
             onMoveToContainer={handleMoveToContainer}
             onMoveToRoot={handleMoveToRoot}
+            onRename={handleRename}
             isExpandable={canHaveChildren}
             isExpanded={isExpanded}
             onToggleExpand={handleToggleExpand}
+            allWidgets={widgets}
           />
           {/* Render children if expanded */}
           {isExpanded && hasChildren && (
@@ -393,12 +477,12 @@ export const ComponentsTree: React.FC = () => {
   };
 
   return (
-    <Card className="h-full">
+    <Card className="h-full w-full">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg">Components Tree</CardTitle>
+        <CardTitle className="text-lg">Дерево компонентов</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="space-y-1">
+        <div className="space-y-1 min-w-0">
           {/* Tree nodes */}
           {renderTree(null)}
         </div>
