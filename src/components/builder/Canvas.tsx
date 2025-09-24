@@ -6,6 +6,7 @@ import { createDefaultWidget } from '../../lib/widgetDefaults';
 import { WidgetRenderer } from './WidgetRenderer';
 import { Ruler } from './Ruler';
 import { Guides } from './Guides';
+import { CanvasSizePresetSelector, CANVAS_SIZE_PRESETS } from '@/components/ui/canvas-size-presets';
 
 
 const HEADER_OFFSET = 160;
@@ -39,10 +40,26 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
   const [sizeDraft, setSizeDraft] = useState<{ width: string; height: string }>({ width: '', height: '' });
   const [hoveredZone, setHoveredZone] = useState<'header' | 'main' | 'footer' | null>(null);
   const [isDraggingWidget, setIsDraggingWidget] = useState(false);
+  const [selectedPreset, setSelectedPreset] = useState<string>('custom');
 
   useEffect(() => {
     setSizeDraft({ width: String(Math.round(canvasSize.width)), height: String(Math.round(canvasSize.height)) });
-  }, [canvasSize.width, canvasSize.height]);
+    
+    // Auto-detect preset based on current canvas size
+    const matchingPreset = CANVAS_SIZE_PRESETS.find(preset => 
+      preset.width > 0 && preset.height > 0 &&
+      Math.abs(preset.width - canvasSize.width) <= 2 &&
+      Math.abs(preset.height - canvasSize.height) <= 2
+    );
+    
+    if (matchingPreset) {
+      setSelectedPreset(matchingPreset.id);
+      // Don't auto-lock on initial load - only when user manually selects a device
+      // This allows the canvas to start unlocked even if it matches a device size
+    } else {
+      setSelectedPreset('custom');
+    }
+  }, [canvasSize.width, canvasSize.height, isCanvasSizeLocked, widgets, dispatch]);
 
   const commitSizeFromDraft = useCallback(() => {
     if (isCanvasSizeLocked) return;
@@ -57,7 +74,36 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
       h = Math.round(h / snapSize) * snapSize;
     }
     dispatch(setCanvasSize({ width: w, height: h }));
+    // Switch to custom when manually editing
+    setSelectedPreset('custom');
   }, [dispatch, sizeDraft, isCanvasSizeLocked, canvasSize.width, canvasSize.height, gridSnap, snapSize]);
+
+  const handlePresetChange = useCallback((presetId: string) => {
+    setSelectedPreset(presetId);
+    
+    if (presetId === 'custom') {
+      // Unlock canvas size for custom editing (only if not locked by containers)
+      if (isCanvasSizeLocked && !widgets.some(w => w.type === 'container')) {
+        dispatch(toggleCanvasSizeLock());
+      }
+      return; // Don't change size, just allow manual input
+    }
+    
+    const preset = CANVAS_SIZE_PRESETS.find(p => p.id === presetId);
+    if (preset && preset.width > 0 && preset.height > 0) {
+      // Always allow changing to device preset, even if currently locked
+      dispatch(setCanvasSize({ width: preset.width, height: preset.height }));
+      setSizeDraft({ width: String(preset.width), height: String(preset.height) });
+      
+      // Auto-lock canvas size for device presets (iPhone, Samsung)
+      // Only lock if not already locked by containers
+      if (!isCanvasSizeLocked || !widgets.some(w => w.type === 'container')) {
+        if (!isCanvasSizeLocked) {
+          dispatch(toggleCanvasSizeLock());
+        }
+      }
+    }
+  }, [dispatch, isCanvasSizeLocked, widgets]);
 
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -349,6 +395,8 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
       newHeight = Math.round(newHeight / snapSize) * snapSize;
     }
     dispatch(setCanvasSize({ width: Math.round(newWidth), height: Math.round(newHeight) }));
+    // Switch to custom when manually resizing
+    setSelectedPreset('custom');
   }, [isResizingCanvas, resizeStart, zoom, gridSnap, snapSize, resizeDirection, dispatch]);
 
   useEffect(() => {
@@ -397,6 +445,12 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
         <div className="sticky top-0 z-30 w-full flex items-center justify-center py-2">
           <div className="inline-flex items-center gap-3 rounded-md bg-white/80 backdrop-blur px-3 py-1 shadow border border-gray-200">
             <div className="flex items-center gap-2">
+              <CanvasSizePresetSelector
+                value={selectedPreset}
+                onValueChange={handlePresetChange}
+                disabled={false}
+              />
+              <span className="text-xs text-gray-400">|</span>
               <Input
                 className="h-7 w-20 text-xs"
                 type="number"
@@ -443,7 +497,9 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
               {isCanvasSizeLocked ? (
                 widgets.some(w => w.type === 'container') 
                   ? '🔒 Заблокировано (контейнер)' 
-                  : '🔒 Разблокировать размер'
+                  : selectedPreset !== 'custom'
+                    ? '🔒 Заблокировано (устройство)'
+                    : '🔒 Разблокировать размер'
               ) : '🔓 Зафиксировать размер'}
             </button>
           </div>
@@ -472,7 +528,13 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
             onMouseDown={(e) => onCanvasResizeMouseDown(e, 'se')}
             onClick={(e) => e.preventDefault()}
             aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Потянуть из угла для изменения размера'}
-            title={isCanvasSizeLocked ? (widgets.some(w => w.type === 'container') ? 'Размер заблокирован из-за контейнера' : 'Размер зафиксирован') : 'Потянуть из угла для изменения размера'}
+            title={isCanvasSizeLocked ? (
+              widgets.some(w => w.type === 'container') 
+                ? 'Размер заблокирован из-за контейнера' 
+                : selectedPreset !== 'custom'
+                  ? 'Размер заблокирован из-за выбранного устройства'
+                  : 'Размер зафиксирован'
+            ) : 'Потянуть из угла для изменения размера'}
           >
           {/* Layout zones */}
           {/* Зоны как на макете: тонкие направляющие и подписи справа */}
@@ -632,14 +694,26 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
               className={`absolute right-0 top-0 bottom-0 w-[12px] ${isCanvasSizeLocked ? 'cursor-not-allowed' : 'cursor-e-resize'}`}
               data-canvas-resize="e"
               onMouseDown={(e) => onCanvasResizeMouseDown(e, 'e')}
-              title={isCanvasSizeLocked ? (widgets.some(w => w.type === 'container') ? 'Размер заблокирован из-за контейнера' : 'Размер зафиксирован') : 'Потяните за правый край (рамка)'}
+              title={isCanvasSizeLocked ? (
+                widgets.some(w => w.type === 'container') 
+                  ? 'Размер заблокирован из-за контейнера' 
+                  : selectedPreset !== 'custom'
+                    ? 'Размер заблокирован из-за выбранного устройства'
+                    : 'Размер зафиксирован'
+              ) : 'Потяните за правый край (рамка)'}
               style={{ pointerEvents: 'auto' }}
             />
             <div
               className={`absolute left-0 right-0 bottom-0 h-[12px] ${isCanvasSizeLocked ? 'cursor-not-allowed' : 'cursor-s-resize'}`}
               data-canvas-resize="s"
               onMouseDown={(e) => onCanvasResizeMouseDown(e, 's')}
-              title={isCanvasSizeLocked ? (widgets.some(w => w.type === 'container') ? 'Размер заблокирован из-за контейнера' : 'Размер зафиксирован') : 'Потяните за нижний край (рамка)'}
+              title={isCanvasSizeLocked ? (
+                widgets.some(w => w.type === 'container') 
+                  ? 'Размер заблокирован из-за контейнера' 
+                  : selectedPreset !== 'custom'
+                    ? 'Размер заблокирован из-за выбранного устройства'
+                    : 'Размер зафиксирован'
+              ) : 'Потяните за нижний край (рамка)'}
               style={{ pointerEvents: 'auto' }}
             />
             <button
@@ -651,7 +725,13 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
               onMouseDown={(e) => onCanvasResizeMouseDown(e, 'se')}
               onClick={(e) => e.preventDefault()}
               aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Тянуть за угол'}
-              title={isCanvasSizeLocked ? (widgets.some(w => w.type === 'container') ? 'Размер заблокирован из-за контейнера' : 'Размер зафиксирован') : 'Тянуть за угол'}
+              title={isCanvasSizeLocked ? (
+                widgets.some(w => w.type === 'container') 
+                  ? 'Размер заблокирован из-за контейнера' 
+                  : selectedPreset !== 'custom'
+                    ? 'Размер заблокирован из-за выбранного устройства'
+                    : 'Размер зафиксирован'
+              ) : 'Тянуть за угол'}
               style={{ pointerEvents: 'auto' }}
             >
               <span className="relative block h-4 w-4">
@@ -670,7 +750,13 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
               onMouseDown={(e) => onCanvasResizeMouseDown(e, 'e')}
               onClick={(e) => e.preventDefault()}
               aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Тянуть за правый край'}
-              title={isCanvasSizeLocked ? (widgets.some(w => w.type === 'container') ? 'Размер заблокирован из-за контейнера' : 'Размер зафиксирован') : 'Тянуть за правый край'}
+              title={isCanvasSizeLocked ? (
+                widgets.some(w => w.type === 'container') 
+                  ? 'Размер заблокирован из-за контейнера' 
+                  : selectedPreset !== 'custom'
+                    ? 'Размер заблокирован из-за выбранного устройства'
+                    : 'Размер зафиксирован'
+              ) : 'Тянуть за правый край'}
               style={{ pointerEvents: 'auto' }}
             />
             <button
@@ -682,7 +768,13 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
               onMouseDown={(e) => onCanvasResizeMouseDown(e, 's')}
               onClick={(e) => e.preventDefault()}
               aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Тянуть за нижний край'}
-              title={isCanvasSizeLocked ? (widgets.some(w => w.type === 'container') ? 'Размер заблокирован из-за контейнера' : 'Размер зафиксирован') : 'Тянуть за нижний край'}
+              title={isCanvasSizeLocked ? (
+                widgets.some(w => w.type === 'container') 
+                  ? 'Размер заблокирован из-за контейнера' 
+                  : selectedPreset !== 'custom'
+                    ? 'Размер заблокирован из-за выбранного устройства'
+                    : 'Размер зафиксирован'
+              ) : 'Тянуть за нижний край'}
               style={{ pointerEvents: 'auto' }}
             />
             <button
@@ -694,7 +786,13 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
               onMouseDown={(e) => onCanvasResizeMouseDown(e, 'se')}
               onClick={(e) => e.preventDefault()}
               aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Тянуть за угол'}
-              title={isCanvasSizeLocked ? (widgets.some(w => w.type === 'container') ? 'Размер заблокирован из-за контейнера' : 'Размер зафиксирован') : 'Тянуть за угол'}
+              title={isCanvasSizeLocked ? (
+                widgets.some(w => w.type === 'container') 
+                  ? 'Размер заблокирован из-за контейнера' 
+                  : selectedPreset !== 'custom'
+                    ? 'Размер заблокирован из-за выбранного устройства'
+                    : 'Размер зафиксирован'
+              ) : 'Тянуть за угол'}
               style={{ pointerEvents: 'auto' }}
             >
               ↘
@@ -710,7 +808,13 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
             onMouseDown={(e) => onCanvasResizeMouseDown(e, 'se')}
             onClick={(e) => e.preventDefault()}
             aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Потянуть для изменения размера'}
-            title={isCanvasSizeLocked ? (widgets.some(w => w.type === 'container') ? 'Размер заблокирован из-за контейнера' : 'Размер зафиксирован') : 'Потяните, чтобы изменить размер'}
+            title={isCanvasSizeLocked ? (
+              widgets.some(w => w.type === 'container') 
+                ? 'Размер заблокирован из-за контейнера' 
+                : selectedPreset !== 'custom'
+                  ? 'Размер заблокирован из-за выбранного устройства'
+                  : 'Размер зафиксирован'
+            ) : 'Потяните, чтобы изменить размер'}
           >
             ↘
           </button>
