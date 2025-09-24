@@ -11,46 +11,39 @@ export function ContainerWidget({ widget, isSelected, onSelect }: WidgetComponen
   const childWidgets = widgets.filter(w => containerWidget.props.children.includes(w.id));
   
   
-  // Map alignment props to CSS values
-  const alignItemsMap = {
-    top: 'flex-start',
-    center: 'center',
-    bottom: 'flex-end'
-  };
-  
-  const justifyContentMap = {
-    start: 'flex-start',
-    center: 'center',
-    end: 'flex-end',
-    'space-between': 'space-between',
-    'space-around': 'space-around',
-    'space-evenly': 'space-evenly'
+  const { alignment, wrap } = containerWidget.props;
+
+  const getFlexAlignment = () => {
+    const mapping = {
+      // New grid-based alignment values
+      'top-left': { justifyContent: 'flex-start', alignItems: 'flex-start' },
+      'top-center': { justifyContent: 'center', alignItems: 'flex-start' },
+      'top-right': { justifyContent: 'flex-end', alignItems: 'flex-start' },
+      'center-left': { justifyContent: 'flex-start', alignItems: 'center' },
+      center: { justifyContent: 'center', alignItems: 'center' },
+      'center-right': { justifyContent: 'flex-end', alignItems: 'center' },
+      'bottom-left': { justifyContent: 'flex-start', alignItems: 'flex-end' },
+      'bottom-center': { justifyContent: 'center', alignItems: 'flex-end' },
+      'bottom-right': { justifyContent: 'flex-end', alignItems: 'flex-end' },
+      // Legacy alignment values for backward compatibility
+      'top': { justifyContent: 'flex-start', alignItems: 'flex-start' },
+      'bottom': { justifyContent: 'flex-start', alignItems: 'flex-end' },
+    } as const;
+
+    return mapping[alignment] || { justifyContent: 'flex-start', alignItems: 'flex-start' };
   };
 
-  // Use flexbox for all layouts (following flexbox principles)
-  const getContainerLayout = () => {
-    const { contentAlignment, alignment, direction, wrap } = containerWidget.props;
-    
-    // Always use flexbox for proper alignment
-    return {
-      justifyContent: justifyContentMap[contentAlignment],
-      alignItems: alignItemsMap[alignment],
-      flexDirection: direction === 'column' ? 'column' : 'row',
-      flexWrap: wrap ? 'wrap' : 'nowrap',
-    };
-  };
-
-  const containerLayout = getContainerLayout();
+  const flexAlignment = getFlexAlignment();
   
   const containerStyle: React.CSSProperties = {
     ...containerWidget.style,
     display: childWidgets.length === 0 ? 'flex' : 'flex',
     placeItems: 'unset',
-    flexDirection: (containerLayout.flexDirection as React.CSSProperties['flexDirection']) || (containerWidget.props.direction === 'column' ? 'column' : 'row'),
-    flexWrap: (containerLayout.flexWrap as React.CSSProperties['flexWrap']) || 'wrap',
+    flexDirection: containerWidget.props.direction === 'column' ? 'column' : 'row',
+    flexWrap: wrap ? 'wrap' : 'nowrap',
     gap: `${containerWidget.props.gap}px`,
-    alignItems: childWidgets.length === 0 ? 'center' : (containerLayout.alignItems || 'flex-start'),
-    justifyContent: childWidgets.length === 0 ? 'center' : (containerLayout.justifyContent || 'flex-start'),
+    alignItems: childWidgets.length === 0 ? 'center' : flexAlignment.alignItems,
+    justifyContent: childWidgets.length === 0 ? 'center' : flexAlignment.justifyContent,
     backgroundColor: childWidgets.length === 0 ? 'transparent' : (containerWidget.style.backgroundColor || 'rgba(240, 240, 240, 0.8)'),
     border: childWidgets.length === 0 ? 'none' : (containerWidget.style.border || '2px dashed #d1d5db'),
     borderRadius: containerWidget.style.borderRadius ? `${containerWidget.style.borderRadius}px` : '8px',

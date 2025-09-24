@@ -362,8 +362,7 @@ export const widgetDefinitions: WidgetDefinition[] = [
     icon: 'Package',
     category: 'layout',
         defaultProps: {
-          alignment: 'start',
-          contentAlignment: 'start',
+          alignment: 'top-left',
           direction: 'column',
           wrap: false,
           gap: 8,

@@ -6,8 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2, Copy, ArrowUp, ArrowDown } from 'lucide-react';
-import { AlignmentControl, ContentAlignmentGrid, OrientationControl } from '@/components/ui/alignment-control';
-import { SimpleAlignmentControl } from '@/components/ui/simple-alignment-control';
+import { AlignmentGridControl, OrientationControl } from '@/components/ui/alignment-control';
 import { SpacingControl, BoxModelControl } from '@/components/ui/spacing-control';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { updateWidget, deleteWidget, duplicateWidget, bringToFront, sendToBack } from '../../features/canvas/canvasSlice';
@@ -435,12 +434,12 @@ export function PropertiesPanel() {
                   />
                 </div>
 
-                {/* Content Alignment */}
+                {/* Alignment Grid */}
                 <div>
-                  <SimpleAlignmentControl
+                  <Label className="text-sm font-medium mb-3 block">Выравнивание</Label>
+                  <AlignmentGridControl
                     value={(localWidget as IContainerWidget).props.alignment}
                     onChange={(value) => handlePropsUpdate({ alignment: value })}
-                    direction={(localWidget as IContainerWidget).props.direction}
                   />
                 </div>
 

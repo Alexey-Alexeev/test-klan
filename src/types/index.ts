@@ -219,8 +219,19 @@ export interface IAccordionWidget extends IWidgetBase {
 export interface IContainerWidget extends IWidgetBase {
   type: 'container';
   props: {
-    alignment: 'top' | 'center' | 'bottom';
-    contentAlignment: 'start' | 'center' | 'end' | 'space-between' | 'space-around' | 'space-evenly';
+    alignment:
+      | 'top-left'
+      | 'top-center'
+      | 'top-right'
+      | 'center-left'
+      | 'center'
+      | 'center-right'
+      | 'bottom-left'
+      | 'bottom-center'
+      | 'bottom-right'
+      // Legacy values for backward compatibility
+      | 'top'
+      | 'bottom';
     direction: 'row' | 'column';
     wrap: boolean;
     gap: number;
