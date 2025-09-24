@@ -150,6 +150,8 @@ const canvasSlice = createSlice({
     clearCanvas: (state) => {
       state.widgets = [];
       state.selectedWidgetId = null;
+      // Auto-unlock canvas size when clearing all widgets
+      state.isCanvasSizeLocked = false;
     },
 
     loadWidgets: (state, action: PayloadAction<IWidget[]>) => {

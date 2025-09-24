@@ -425,10 +425,14 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
               className={`text-xs px-2 py-1 rounded transition ${
                 isCanvasSizeLocked && widgets.some(w => w.type === 'container')
                   ? 'bg-orange-600 text-white cursor-not-allowed opacity-75'
-                  : 'bg-gray-900 text-white hover:bg-gray-800'
+                  : isCanvasSizeLocked
+                    ? 'bg-orange-600 text-white hover:bg-orange-700'
+                    : 'bg-gray-900 text-white hover:bg-gray-800'
               }`}
               onClick={(e) => { 
                 e.stopPropagation(); 
+                // Only block if locked AND has containers (permanent lock)
+                // Allow toggle if locked but no containers (manual lock)
                 if (!(isCanvasSizeLocked && widgets.some(w => w.type === 'container'))) {
                   dispatch(toggleCanvasSizeLock()); 
                 }
