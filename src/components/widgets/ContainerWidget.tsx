@@ -13,10 +13,9 @@ export function ContainerWidget({ widget, isSelected, onSelect }: WidgetComponen
   
   // Map alignment props to CSS values
   const alignItemsMap = {
-    start: 'flex-start',
+    top: 'flex-start',
     center: 'center',
-    end: 'flex-end',
-    stretch: 'stretch'
+    bottom: 'flex-end'
   };
   
   const justifyContentMap = {
@@ -28,72 +27,16 @@ export function ContainerWidget({ widget, isSelected, onSelect }: WidgetComponen
     'space-evenly': 'space-evenly'
   };
 
-  // Calculate positioning and layout based on content alignment
+  // Use flexbox for all layouts (following flexbox principles)
   const getContainerLayout = () => {
-    if (childWidgets.length === 0) return {};
+    const { contentAlignment, alignment, direction, wrap } = containerWidget.props;
     
-    const { contentAlignment, alignment, direction } = containerWidget.props;
-    
-    // For space-between, space-around, space-evenly - use flexbox
-    if (['space-between', 'space-around', 'space-evenly'].includes(contentAlignment)) {
-      return {
-        justifyContent: justifyContentMap[contentAlignment],
-        alignItems: alignItemsMap[alignment],
-        flexDirection: direction === 'column' ? 'column' : 'row',
-      };
-    }
-    
-    // For stretch alignment - use flexbox with stretch
-    if (alignment === 'stretch') {
-      return {
-        justifyContent: justifyContentMap[contentAlignment],
-        alignItems: 'stretch',
-        flexDirection: direction === 'column' ? 'column' : 'row',
-      };
-    }
-    
-    // For other cases - position first element absolutely
-    const getFirstElementPosition = () => {
-      // Calculate horizontal position
-      let left: string | number = 0;
-      if (contentAlignment === 'center') {
-        left = '50%';
-      } else if (contentAlignment === 'end') {
-        left = '100%';
-      }
-      
-      // Calculate vertical position  
-      let top: string | number = 0;
-      if (alignment === 'center') {
-        top = '50%';
-      } else if (alignment === 'end') {
-        top = '100%';
-      }
-      
-      return {
-        position: 'absolute' as const,
-        left: typeof left === 'string' ? left : `${left}px`,
-        top: typeof top === 'string' ? top : `${top}px`,
-        transform: (() => {
-          const isContentCenter = contentAlignment === 'center';
-          const isAlignmentCenter = alignment === 'center';
-          
-          if (isContentCenter && isAlignmentCenter) {
-            return 'translate(-50%, -50%)';
-          } else if (isContentCenter) {
-            return 'translateX(-50%)';
-          } else if (isAlignmentCenter) {
-            return 'translateY(-50%)';
-          } else {
-            return 'none';
-          }
-        })()
-      };
-    };
-    
+    // Always use flexbox for proper alignment
     return {
-      firstElementPosition: getFirstElementPosition(),
-      useFlexbox: false
+      justifyContent: justifyContentMap[contentAlignment],
+      alignItems: alignItemsMap[alignment],
+      flexDirection: direction === 'column' ? 'column' : 'row',
+      flexWrap: wrap ? 'wrap' : 'nowrap',
     };
   };
 
@@ -104,7 +47,7 @@ export function ContainerWidget({ widget, isSelected, onSelect }: WidgetComponen
     display: childWidgets.length === 0 ? 'flex' : 'flex',
     placeItems: 'unset',
     flexDirection: (containerLayout.flexDirection as React.CSSProperties['flexDirection']) || (containerWidget.props.direction === 'column' ? 'column' : 'row'),
-    flexWrap: 'wrap', // Always enable wrapping to prevent overflow
+    flexWrap: (containerLayout.flexWrap as React.CSSProperties['flexWrap']) || 'wrap',
     gap: `${containerWidget.props.gap}px`,
     alignItems: childWidgets.length === 0 ? 'center' : (containerLayout.alignItems || 'flex-start'),
     justifyContent: childWidgets.length === 0 ? 'center' : (containerLayout.justifyContent || 'flex-start'),
@@ -151,79 +94,14 @@ export function ContainerWidget({ widget, isSelected, onSelect }: WidgetComponen
       )}
       
       
-      {/* Render child widgets */}
-      {childWidgets.map((childWidget, index) => {
-        const isFirstElement = index === 0;
-        const useFlexbox = containerLayout.useFlexbox !== false;
-        
-        // For flexbox layouts (space-between, space-around, space-evenly, stretch)
-        if (useFlexbox) {
-          return (
-            <div
-              key={childWidget.id}
-              style={{
-                position: 'relative',
-                flex: containerWidget.props.alignment === 'stretch' ? 1 : 'none',
-                minWidth: 0, // Allow shrinking below content size
-                minHeight: 0, // Allow shrinking below content size
-                zIndex: childWidget.zIndex,
-                pointerEvents: 'auto', // Allow interaction with child widgets
-                display: 'flex',
-                alignItems: 'stretch', // Make child widgets fill the container height
-                justifyContent: 'stretch', // Make child widgets fill the container width
-                margin: 0, // Remove any default margins
-                padding: 0, // Remove any default padding
-              }}
-            >
-              <WidgetRenderer
-                widget={childWidget}
-                isSelected={false}
-                isEditable={false}
-              />
-            </div>
-          );
-        }
-        
-        // For absolute positioning layouts
-        const firstElementPosition = containerLayout.firstElementPosition || {};
-        
-        // Calculate position for subsequent elements
-        const getSubsequentElementPosition = () => {
-          if (isFirstElement) return {};
-          
-          const { direction } = containerWidget.props;
-          const gap = containerWidget.props.gap;
-          
-          const firstLeft = (firstElementPosition as any).left || '0';
-          const firstTop = (firstElementPosition as any).top || '0';
-          const firstTransform = (firstElementPosition as any).transform || 'none';
-          
-          if (direction === 'column') {
-            // For vertical layout, stack elements below the first one
-            return {
-              position: 'absolute' as const,
-              left: firstLeft,
-              top: `calc(${firstTop} + ${index * (childWidget.size.height + gap)}px)`,
-              transform: firstTransform
-            };
-          } else {
-            // For horizontal layout, place elements to the right of the first one
-            return {
-              position: 'absolute' as const,
-              left: `calc(${firstLeft} + ${index * (childWidget.size.width + gap)}px)`,
-              top: firstTop,
-              transform: firstTransform
-            };
-          }
-        };
-        
+      {/* Render child widgets using flexbox */}
+      {childWidgets.map((childWidget) => {
         return (
           <div
             key={childWidget.id}
             style={{
-              position: 'absolute',
-              ...(isFirstElement ? firstElementPosition : getSubsequentElementPosition()),
-              flex: 'none', // No flex for absolute positioned elements
+              position: 'relative',
+              flex: 'none',
               minWidth: 0, // Allow shrinking below content size
               minHeight: 0, // Allow shrinking below content size
               zIndex: childWidget.zIndex,
@@ -231,7 +109,7 @@ export function ContainerWidget({ widget, isSelected, onSelect }: WidgetComponen
               display: 'flex',
               alignItems: 'stretch', // Make child widgets fill the container height
               justifyContent: 'stretch', // Make child widgets fill the container width
-              margin: 0, // Remove any default margins
+              margin: childWidget.style.margin || 0, // Respect child widget margins
               padding: 0, // Remove any default padding
             }}
           >

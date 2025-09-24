@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2, Copy, ArrowUp, ArrowDown } from 'lucide-react';
 import { AlignmentControl, ContentAlignmentGrid, OrientationControl } from '@/components/ui/alignment-control';
+import { SimpleAlignmentControl } from '@/components/ui/simple-alignment-control';
 import { SpacingControl, BoxModelControl } from '@/components/ui/spacing-control';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { updateWidget, deleteWidget, duplicateWidget, bringToFront, sendToBack } from '../../features/canvas/canvasSlice';
@@ -436,12 +437,10 @@ export function PropertiesPanel() {
 
                 {/* Content Alignment */}
                 <div>
-                  <Label className="text-sm font-medium mb-3 block">Выравнивание контента</Label>
-                  <ContentAlignmentGrid
-                    xValue={(localWidget as IContainerWidget).props.contentAlignment}
-                    yValue={(localWidget as IContainerWidget).props.alignment}
-                    onXChange={(value) => handlePropsUpdate({ contentAlignment: value })}
-                    onYChange={(value) => handlePropsUpdate({ alignment: value })}
+                  <SimpleAlignmentControl
+                    value={(localWidget as IContainerWidget).props.alignment}
+                    onChange={(value) => handlePropsUpdate({ alignment: value })}
+                    direction={(localWidget as IContainerWidget).props.direction}
                   />
                 </div>
 
