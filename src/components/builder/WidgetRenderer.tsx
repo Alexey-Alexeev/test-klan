@@ -123,16 +123,20 @@ export function WidgetRenderer({ widget, isSelected, isEditable }: WidgetCompone
       position.y = Math.round(position.y / snapSize) * snapSize;
     }
     
-    // Определяем зону для виджета при перетаскивании
-    const headerOffset = 40;
-    const footerOffset = 40;
-    const barHeight = 4;
-    const footerBarTop = canvasSize.height - footerOffset - barHeight;
-    const headerBarBottom = headerOffset + barHeight;
-    const zone = position.y <= headerBarBottom ? 'header' : (position.y >= footerBarTop ? 'footer' : 'main');
+    // For root-level widgets, determine zone
+    if (!widget.parentId) {
+      // Определяем зону для виджета при перетаскивании (только для корневых элементов)
+      const headerOffset = 40;
+      const footerOffset = 40;
+      const barHeight = 4;
+      const footerBarTop = canvasSize.height - footerOffset - barHeight;
+      const headerBarBottom = headerOffset + barHeight;
+      const zone = position.y <= headerBarBottom ? 'header' : (position.y >= footerBarTop ? 'footer' : 'main');
+    }
+    // For child widgets, constraints are handled in updateWidgetPosition
     
     dispatch(updateWidgetPosition({ id: widget.id, position }));
-  }, [dispatch, widget.id, gridSnap, snapSize, isEditable, snapToAlignment]);
+  }, [dispatch, widget.id, gridSnap, snapSize, isEditable, snapToAlignment, widget.parentId, widget.size, widgets]);
 
   const handleDragStart = useCallback(() => {
     setIsDragging(true);

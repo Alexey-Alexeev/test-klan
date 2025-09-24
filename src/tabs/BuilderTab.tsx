@@ -10,6 +10,7 @@ import { widgetDefinitions, createDefaultWidget } from '../lib/widgetDefaults';
 import { Toolbar } from '../components/builder/Toolbar';
 import { Canvas } from '../components/builder/Canvas';
 import { PropertiesPanel } from '../components/builder/PropertiesPanel';
+import { ComponentsTree } from '../components/builder/ComponentsTree';
 
 export function BuilderTab() {
   const dispatch = useAppDispatch();
@@ -65,46 +66,54 @@ export function BuilderTab() {
       
       {/* Main content area */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Widgets Palette Sidebar */}
+        {/* Left Sidebar with Components Tree and Widgets Palette */}
         {viewMode === 'design' && (
-          <div className="w-64 border-r border-border bg-card p-4 overflow-y-auto">
-            <h3 className="font-semibold text-sm mb-4">Компоненты</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {widgetDefinitions.map((widget) => {
-                const IconComponent = icons[widget.icon as keyof typeof icons] as React.ComponentType<any>;
-                const isButton = widget.type === 'button';
-                
-                return (
-                  <div
-                    key={widget.type}
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData('widget-type', widget.type);
-                    }}
-                    onClick={() => handleWidgetClick(widget.type)}
-                    className="p-3 border border-border rounded-lg cursor-pointer hover:bg-accent/50 hover:border-primary/50 transition-all duration-200 active:scale-95"
-                  >
-                    <div className="flex flex-col items-center gap-2 text-center">
-                      {isButton ? (
-                        <Button variant="dsPrimary" className="h-7 px-3 text-[11px]">Кнопка</Button>
-                      ) : (
-                        IconComponent && (
-                          <IconComponent className="h-6 w-6 text-muted-foreground" />
-                        )
-                      )}
-                      <span className="text-xs font-medium text-foreground">
-                        {widget.name}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+          <div className="w-80 border-r border-border bg-card flex flex-col">
+            {/* Components Tree */}
+            <div className="flex-1 p-4 border-b">
+              <ComponentsTree />
             </div>
             
-            <div className="mt-6 p-3 bg-muted/50 rounded-lg">
-              <p className="text-xs text-muted-foreground text-center">
-                Кликните или перетащите компонент на холст для добавления
-              </p>
+            {/* Widgets Palette */}
+            <div className="p-4 overflow-y-auto">
+              <h3 className="font-semibold text-sm mb-4">Компоненты</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {widgetDefinitions.map((widget) => {
+                  const IconComponent = icons[widget.icon as keyof typeof icons] as React.ComponentType<any>;
+                  const isButton = widget.type === 'button';
+                  
+                  return (
+                    <div
+                      key={widget.type}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('widget-type', widget.type);
+                      }}
+                      onClick={() => handleWidgetClick(widget.type)}
+                      className="p-3 border border-border rounded-lg cursor-pointer hover:bg-accent/50 hover:border-primary/50 transition-all duration-200 active:scale-95"
+                    >
+                      <div className="flex flex-col items-center gap-2 text-center">
+                        {isButton ? (
+                          <Button variant="dsPrimary" className="h-7 px-3 text-[11px]">Кнопка</Button>
+                        ) : (
+                          IconComponent && (
+                            <IconComponent className="h-6 w-6 text-muted-foreground" />
+                          )
+                        )}
+                        <span className="text-xs font-medium text-foreground">
+                          {widget.name}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              <div className="mt-6 p-3 bg-muted/50 rounded-lg">
+                <p className="text-xs text-muted-foreground text-center">
+                  Кликните или перетащите компонент на холст для добавления
+                </p>
+              </div>
             </div>
           </div>
         )}

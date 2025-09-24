@@ -30,6 +30,7 @@ export interface IWidgetBase {
   zIndex: number;
   style: IWidgetStyle;
   zone?: 'header' | 'main' | 'footer';
+  parentId?: string; // ID of parent container
 }
 
 export interface IButtonWidget extends IWidgetBase {
@@ -89,6 +90,7 @@ export interface IContainerWidget extends IWidgetBase {
     alignItems: 'flex-start' | 'center' | 'flex-end' | 'stretch';
     gap: number;
     padding: number;
+    children?: string[]; // IDs of child widgets
   };
 }
 

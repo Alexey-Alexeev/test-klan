@@ -7,6 +7,10 @@ import { WidgetRenderer } from './WidgetRenderer';
 import { Ruler } from './Ruler';
 import { Guides } from './Guides';
 
+
+const HEADER_OFFSET = 160;
+const FOOTER_OFFSET = 160;
+
 export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.RefObject<HTMLDivElement> }) {
   const dispatch = useAppDispatch();
   const { 
@@ -75,30 +79,67 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
         ? { x: Math.round(x / snapSize) * snapSize, y: Math.round(y / snapSize) * snapSize }
         : { x, y };
 
-      const widget = createDefaultWidget(widgetType, position);
+      // Check if drop is inside a container
+      const containers = widgets.filter(w => w.type === 'container' && !w.parentId);
+      let targetContainer = null;
+      
+      for (const container of containers) {
+        const containerRect = {
+          left: container.position.x,
+          top: container.position.y,
+          right: container.position.x + container.size.width,
+          bottom: container.position.y + container.size.height
+        };
+        
+        if (x >= containerRect.left && x <= containerRect.right && 
+            y >= containerRect.top && y <= containerRect.bottom) {
+          targetContainer = container;
+          break;
+        }
+      }
+
+      let widget;
+      
+      if (targetContainer) {
+        // If dropped inside a container, create widget with relative position
+        const relativePosition = {
+          x: position.x - targetContainer.position.x,
+          y: position.y - targetContainer.position.y
+        };
+        widget = createDefaultWidget(widgetType, relativePosition);
+        if (widget) {
+          widget.parentId = targetContainer.id;
+        }
+      } else {
+        // Create widget with global position for root level
+        widget = createDefaultWidget(widgetType, position);
+        if (widget) {
+          // определить зону по направляющим (увеличенные зоны)
+          const headerOffset = HEADER_OFFSET; // увеличили зону header
+          const footerOffset = FOOTER_OFFSET; // увеличили зону footer
+          const barHeight = 4;
+          const footerBarTop = canvasSize.height - footerOffset - barHeight;
+          const headerBarBottom = headerOffset + barHeight;
+          const zone = position.y <= headerBarBottom ? 'header' : (position.y >= footerBarTop ? 'footer' : 'main');
+          (widget as any).zone = zone;
+        }
+      }
+      
       if (widget) {
-        // определить зону по направляющим (увеличенные зоны)
-        const headerOffset = 40; // увеличили зону header
-        const footerOffset = 40; // увеличили зону footer
-        const barHeight = 4;
-        const footerBarTop = canvasSize.height - footerOffset - barHeight;
-        const headerBarBottom = headerOffset + barHeight;
-        const zone = position.y <= headerBarBottom ? 'header' : (position.y >= footerBarTop ? 'footer' : 'main');
-        (widget as any).zone = zone;
         dispatch(addWidget(widget));
       }
     }
     setIsDraggingWidget(false);
     setHoveredZone(null);
-  }, [dispatch, zoom, gridSnap, snapSize, panOffset]);
+  }, [dispatch, zoom, gridSnap, snapSize, panOffset, widgets]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
     const yCanvas = (e.clientY - rect.top - (panOffset?.y || 0)) / zoom;
-    const headerOffset = 40; // увеличенная зона header
-    const footerOffset = 40; // увеличенная зона footer
+    const headerOffset = HEADER_OFFSET; // увеличенная зона header
+    const footerOffset = FOOTER_OFFSET; // увеличенная зона footer
     const barHeight = 4;
     const footerBarTop = canvasSize.height - footerOffset - barHeight;
     const headerBarBottom = headerOffset + barHeight;
@@ -464,14 +505,16 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
             </>
           )}
           
-          {widgets.map((widget) => (
-            <WidgetRenderer
-              key={widget.id}
-              widget={widget}
-              isSelected={selectedWidgetId === widget.id}
-              isEditable={true}
-            />
-          ))}
+          {widgets
+            .filter(widget => !widget.parentId) // Only render root-level widgets
+            .map((widget) => (
+              <WidgetRenderer
+                key={widget.id}
+                widget={widget}
+                isSelected={selectedWidgetId === widget.id}
+                isEditable={true}
+              />
+            ))}
           
           {/* Guides for alignment */}
           <Guides

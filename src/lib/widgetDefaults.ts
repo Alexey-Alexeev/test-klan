@@ -132,6 +132,7 @@ export const widgetDefinitions: WidgetDefinition[] = [
       alignItems: 'stretch',
       gap: 8,
       padding: 16,
+      children: [],
     },
     defaultStyle: {
       backgroundColor: 'transparent',

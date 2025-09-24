@@ -353,7 +353,8 @@ export function PropertiesPanel() {
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Настройки контейнера</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
+              {/* Layout Type */}
               <div>
                 <Label htmlFor="containerLayout">Тип макета</Label>
                 <Select
@@ -371,8 +372,9 @@ export function PropertiesPanel() {
                 </Select>
               </div>
               
+              {/* Orientation */}
               <div>
-                <Label htmlFor="containerDirection">Направление</Label>
+                <Label htmlFor="containerDirection">Ориентация</Label>
                 <Select
                   value={(localWidget as IContainerWidget).props.direction}
                   onValueChange={(value) => handlePropsUpdate({ direction: value })}
@@ -385,6 +387,90 @@ export function PropertiesPanel() {
                     <SelectItem value="column">Вертикально</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Alignment */}
+              <div>
+                <Label>Выравнивание</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="justifyContent" className="text-xs text-muted-foreground">По горизонтали</Label>
+                    <Select
+                      value={(localWidget as IContainerWidget).props.justifyContent}
+                      onValueChange={(value) => handlePropsUpdate({ justifyContent: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="flex-start">Начало</SelectItem>
+                        <SelectItem value="center">Центр</SelectItem>
+                        <SelectItem value="flex-end">Конец</SelectItem>
+                        <SelectItem value="space-between">Распределить</SelectItem>
+                        <SelectItem value="space-around">Вокруг</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="alignItems" className="text-xs text-muted-foreground">По вертикали</Label>
+                    <Select
+                      value={(localWidget as IContainerWidget).props.alignItems}
+                      onValueChange={(value) => handlePropsUpdate({ alignItems: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="flex-start">Начало</SelectItem>
+                        <SelectItem value="center">Центр</SelectItem>
+                        <SelectItem value="flex-end">Конец</SelectItem>
+                        <SelectItem value="stretch">Растянуть</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Content Align - Visual Grid */}
+              <div>
+                <Label>Content Align</Label>
+                <div className="border rounded-lg p-3">
+                  <div className="grid grid-cols-3 gap-1 mb-2">
+                    {[
+                      { key: 'top-left', label: '↖' },
+                      { key: 'top-center', label: '↑' },
+                      { key: 'top-right', label: '↗' },
+                      { key: 'middle-left', label: '←' },
+                      { key: 'middle-center', label: '⊙' },
+                      { key: 'middle-right', label: '→' },
+                      { key: 'bottom-left', label: '↙' },
+                      { key: 'bottom-center', label: '↓' },
+                      { key: 'bottom-right', label: '↘' }
+                    ].map(({ key, label }) => (
+                      <Button
+                        key={key}
+                        variant="outline"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => {
+                          const [vertical, horizontal] = key.split('-');
+                          handlePropsUpdate({
+                            alignItems: vertical === 'top' ? 'flex-start' : vertical === 'bottom' ? 'flex-end' : 'center',
+                            justifyContent: horizontal === 'left' ? 'flex-start' : horizontal === 'right' ? 'flex-end' : 'center'
+                          });
+                        }}
+                      >
+                        {label}
+                      </Button>
+                    ))}
+                  </div>
+                  <div className="text-xs text-muted-foreground text-center">
+                    X: {localWidget.props.justifyContent === 'flex-start' ? 'Left' : 
+                         localWidget.props.justifyContent === 'flex-end' ? 'Right' : 'Center'} | 
+                    Y: {localWidget.props.alignItems === 'flex-start' ? 'Top' : 
+                         localWidget.props.alignItems === 'flex-end' ? 'Bottom' : 'Center'}
+                  </div>
+                </div>
               </div>
               
               <div>
