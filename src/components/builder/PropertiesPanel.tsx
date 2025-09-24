@@ -186,9 +186,11 @@ export function PropertiesPanel() {
                   id="width"
                   type="number"
                   value={localWidget.size.width}
-                  onChange={(e) => handleUpdate({
-                    size: { ...localWidget.size, width: Number(e.target.value) }
-                  })}
+                  onChange={(e) => {
+                    handleUpdate({
+                      size: { ...localWidget.size, width: Number(e.target.value) }
+                    });
+                  }}
                 />
               </div>
               <div>
@@ -197,9 +199,11 @@ export function PropertiesPanel() {
                   id="height"
                   type="number"
                   value={localWidget.size.height}
-                  onChange={(e) => handleUpdate({
-                    size: { ...localWidget.size, height: Number(e.target.value) }
-                  })}
+                  onChange={(e) => {
+                    handleUpdate({
+                      size: { ...localWidget.size, height: Number(e.target.value) }
+                    });
+                  }}
                 />
               </div>
             </div>
@@ -348,153 +352,696 @@ export function PropertiesPanel() {
           </Card>
         )}
 
-        {localWidget && localWidget.type === 'container' && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Настройки контейнера</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Layout Type */}
-              <div>
-                <Label htmlFor="containerLayout">Тип макета</Label>
-                <Select
-                  value={(localWidget as IContainerWidget).props.layout}
-                  onValueChange={(value) => handlePropsUpdate({ layout: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="flex">Flexbox</SelectItem>
-                    <SelectItem value="grid">Grid</SelectItem>
-                    <SelectItem value="block">Block</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Orientation */}
-              <div>
-                <Label htmlFor="containerDirection">Ориентация</Label>
-                <Select
-                  value={(localWidget as IContainerWidget).props.direction}
-                  onValueChange={(value) => handlePropsUpdate({ direction: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="row">Горизонтально</SelectItem>
-                    <SelectItem value="column">Вертикально</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+        {localWidget && localWidget.type === 'container' && (() => {
+          // Helper functions for backward compatibility
+          const getPaddingValue = (side: 'top' | 'right' | 'bottom' | 'left') => {
+            const padding = (localWidget as IContainerWidget).props.padding;
+            if (typeof padding === 'object') {
+              return padding[side];
+            }
+            return padding || 16;
+          };
 
-              {/* Alignment */}
-              <div>
-                <Label>Выравнивание</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="justifyContent" className="text-xs text-muted-foreground">По горизонтали</Label>
-                    <Select
-                      value={(localWidget as IContainerWidget).props.justifyContent}
-                      onValueChange={(value) => handlePropsUpdate({ justifyContent: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="flex-start">Начало</SelectItem>
-                        <SelectItem value="center">Центр</SelectItem>
-                        <SelectItem value="flex-end">Конец</SelectItem>
-                        <SelectItem value="space-between">Распределить</SelectItem>
-                        <SelectItem value="space-around">Вокруг</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="alignItems" className="text-xs text-muted-foreground">По вертикали</Label>
-                    <Select
-                      value={(localWidget as IContainerWidget).props.alignItems}
-                      onValueChange={(value) => handlePropsUpdate({ alignItems: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="flex-start">Начало</SelectItem>
-                        <SelectItem value="center">Центр</SelectItem>
-                        <SelectItem value="flex-end">Конец</SelectItem>
-                        <SelectItem value="stretch">Растянуть</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+          const getMarginValue = (side: 'top' | 'right' | 'bottom' | 'left') => {
+            const margin = (localWidget as IContainerWidget).props.margin;
+            if (typeof margin === 'object') {
+              return margin[side];
+            }
+            return 0;
+          };
+
+          const updatePadding = (side: 'top' | 'right' | 'bottom' | 'left', value: number) => {
+            const currentPadding = (localWidget as IContainerWidget).props.padding;
+            if (typeof currentPadding === 'object') {
+              handlePropsUpdate({ 
+                padding: { 
+                  ...currentPadding, 
+                  [side]: value 
+                } 
+              });
+            } else {
+              // Convert old numeric padding to new object structure
+              const paddingValue = currentPadding || 16;
+              handlePropsUpdate({ 
+                padding: { 
+                  top: side === 'top' ? value : paddingValue,
+                  right: side === 'right' ? value : paddingValue,
+                  bottom: side === 'bottom' ? value : paddingValue,
+                  left: side === 'left' ? value : paddingValue
+                } 
+              });
+            }
+          };
+
+          const updateMargin = (side: 'top' | 'right' | 'bottom' | 'left', value: number) => {
+            const currentMargin = (localWidget as IContainerWidget).props.margin;
+            if (typeof currentMargin === 'object') {
+              handlePropsUpdate({ 
+                margin: { 
+                  ...currentMargin, 
+                  [side]: value 
+                } 
+              });
+            } else {
+              // Convert old margin to new object structure
+              handlePropsUpdate({ 
+                margin: { 
+                  top: side === 'top' ? value : 0,
+                  right: side === 'right' ? value : 0,
+                  bottom: side === 'bottom' ? value : 0,
+                  left: side === 'left' ? value : 0
+                } 
+              });
+            }
+          };
+
+          return (
+          <>
+            {/* Layout and Orientation */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Макет и ориентация</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="containerLayout">Тип макета</Label>
+                  <Select
+                    value={(localWidget as IContainerWidget).props.layout}
+                    onValueChange={(value) => handlePropsUpdate({ layout: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="flex">Flexbox</SelectItem>
+                      <SelectItem value="grid">Grid</SelectItem>
+                      <SelectItem value="block">Block</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
+                
+                <div>
+                  <Label htmlFor="containerDirection">Ориентация</Label>
+                  <Select
+                    value={(localWidget as IContainerWidget).props.direction}
+                    onValueChange={(value) => handlePropsUpdate({ direction: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="row">Горизонтально</SelectItem>
+                      <SelectItem value="column">Вертикально</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              {/* Content Align - Visual Grid */}
-              <div>
-                <Label>Content Align</Label>
-                <div className="border rounded-lg p-3">
-                  <div className="grid grid-cols-3 gap-1 mb-2">
-                    {[
-                      { key: 'top-left', label: '↖' },
-                      { key: 'top-center', label: '↑' },
-                      { key: 'top-right', label: '↗' },
-                      { key: 'middle-left', label: '←' },
-                      { key: 'middle-center', label: '⊙' },
-                      { key: 'middle-right', label: '→' },
-                      { key: 'bottom-left', label: '↙' },
-                      { key: 'bottom-center', label: '↓' },
-                      { key: 'bottom-right', label: '↘' }
-                    ].map(({ key, label }) => (
-                      <Button
-                        key={key}
-                        variant="outline"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => {
-                          const [vertical, horizontal] = key.split('-');
-                          handlePropsUpdate({
-                            alignItems: vertical === 'top' ? 'flex-start' : vertical === 'bottom' ? 'flex-end' : 'center',
-                            justifyContent: horizontal === 'left' ? 'flex-start' : horizontal === 'right' ? 'flex-end' : 'center'
-                          });
-                        }}
+                <div>
+                  <Label>Выравнивание контента</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="justifyContent" className="text-xs text-muted-foreground">По горизонтали</Label>
+                      <Select
+                        value={(localWidget as IContainerWidget).props.justifyContent}
+                        onValueChange={(value) => handlePropsUpdate({ justifyContent: value })}
                       >
-                        {label}
-                      </Button>
-                    ))}
-                  </div>
-                  <div className="text-xs text-muted-foreground text-center">
-                    X: {localWidget.props.justifyContent === 'flex-start' ? 'Left' : 
-                         localWidget.props.justifyContent === 'flex-end' ? 'Right' : 'Center'} | 
-                    Y: {localWidget.props.alignItems === 'flex-start' ? 'Top' : 
-                         localWidget.props.alignItems === 'flex-end' ? 'Bottom' : 'Center'}
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="flex-start">Начало</SelectItem>
+                          <SelectItem value="center">Центр</SelectItem>
+                          <SelectItem value="flex-end">Конец</SelectItem>
+                          <SelectItem value="space-between">Распределить</SelectItem>
+                          <SelectItem value="space-around">Вокруг</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="alignItems" className="text-xs text-muted-foreground">По вертикали</Label>
+                      <Select
+                        value={(localWidget as IContainerWidget).props.alignItems}
+                        onValueChange={(value) => handlePropsUpdate({ alignItems: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="flex-start">Начало</SelectItem>
+                          <SelectItem value="center">Центр</SelectItem>
+                          <SelectItem value="flex-end">Конец</SelectItem>
+                          <SelectItem value="stretch">Растянуть</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="containerGap">Отступ между элементами</Label>
-                <Input
-                  id="containerGap"
-                  type="number"
-                  value={(localWidget as IContainerWidget).props.gap}
-                  onChange={(e) => handlePropsUpdate({ gap: Number(e.target.value) })}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="containerPadding">Внутренние отступы</Label>
-                <Input
-                  id="containerPadding"
-                  type="number"
-                  value={(localWidget as IContainerWidget).props.padding}
-                  onChange={(e) => handlePropsUpdate({ padding: Number(e.target.value) })}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        )}
+
+                <div>
+                  <Label htmlFor="containerGap">Отступ между элементами</Label>
+                  <Input
+                    id="containerGap"
+                    type="number"
+                    value={(localWidget as IContainerWidget).props.gap}
+                    onChange={(e) => handlePropsUpdate({ gap: Number(e.target.value) })}
+                  />
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="containerWrap"
+                    checked={(localWidget as IContainerWidget).props.wrap || false}
+                    onChange={(e) => handlePropsUpdate({ wrap: e.target.checked })}
+                    className="rounded"
+                  />
+                  <Label htmlFor="containerWrap" className="text-sm">Перенос строк</Label>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Sizing */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Размеры</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Ширина</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Select
+                      value={(localWidget as IContainerWidget).props.widthMode || 'fill'}
+                      onValueChange={(value) => handlePropsUpdate({ widthMode: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fixed">Фиксированная</SelectItem>
+                        <SelectItem value="fill">Заполнить</SelectItem>
+                        <SelectItem value="wrap-content">По содержимому</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {((localWidget as IContainerWidget).props.widthMode || 'fill') === 'fixed' && (
+                      <Input
+                        type="number"
+                        placeholder="px"
+                        value={(localWidget as IContainerWidget).props.widthValue || ''}
+                        onChange={(e) => handlePropsUpdate({ widthValue: Number(e.target.value) })}
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Высота</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Select
+                      value={(localWidget as IContainerWidget).props.heightMode || 'fixed'}
+                      onValueChange={(value) => handlePropsUpdate({ heightMode: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fixed">Фиксированная</SelectItem>
+                        <SelectItem value="fill">Заполнить</SelectItem>
+                        <SelectItem value="wrap-content">По содержимому</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {((localWidget as IContainerWidget).props.heightMode || 'fixed') === 'fixed' && (
+                      <Input
+                        type="number"
+                        placeholder="px"
+                        value={(localWidget as IContainerWidget).props.heightValue || ''}
+                        onChange={(e) => handlePropsUpdate({ heightValue: Number(e.target.value) })}
+                      />
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Spacing */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Отступы</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Внутренние отступы (Padding)</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Верх</Label>
+                      <Input
+                        type="number"
+                        value={getPaddingValue('top')}
+                        onChange={(e) => updatePadding('top', Number(e.target.value))}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Низ</Label>
+                      <Input
+                        type="number"
+                        value={getPaddingValue('bottom')}
+                        onChange={(e) => updatePadding('bottom', Number(e.target.value))}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Лево</Label>
+                      <Input
+                        type="number"
+                        value={getPaddingValue('left')}
+                        onChange={(e) => updatePadding('left', Number(e.target.value))}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Право</Label>
+                      <Input
+                        type="number"
+                        value={getPaddingValue('right')}
+                        onChange={(e) => updatePadding('right', Number(e.target.value))}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Внешние отступы (Margin)</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Верх</Label>
+                      <Input
+                        type="number"
+                        value={getMarginValue('top')}
+                        onChange={(e) => updateMargin('top', Number(e.target.value))}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Низ</Label>
+                      <Input
+                        type="number"
+                        value={getMarginValue('bottom')}
+                        onChange={(e) => updateMargin('bottom', Number(e.target.value))}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Лево</Label>
+                      <Input
+                        type="number"
+                        value={getMarginValue('left')}
+                        onChange={(e) => updateMargin('left', Number(e.target.value))}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Право</Label>
+                      <Input
+                        type="number"
+                        value={getMarginValue('right')}
+                        onChange={(e) => updateMargin('right', Number(e.target.value))}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Background */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Фон</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="containerBackgroundColor">Цвет фона</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="containerBackgroundColor"
+                      type="color"
+                      value={(localWidget as IContainerWidget).props.backgroundColor || '#ffffff'}
+                      onChange={(e) => handlePropsUpdate({ backgroundColor: e.target.value })}
+                      className="w-12 h-10 p-1"
+                    />
+                    <Input
+                      type="text"
+                      placeholder="#ffffff"
+                      value={(localWidget as IContainerWidget).props.backgroundColor || ''}
+                      onChange={(e) => handlePropsUpdate({ backgroundColor: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="containerBackgroundImage">Фоновое изображение</Label>
+                  <Input
+                    id="containerBackgroundImage"
+                    type="url"
+                    placeholder="https://example.com/image.jpg"
+                    value={(localWidget as IContainerWidget).props.backgroundImage || ''}
+                    onChange={(e) => handlePropsUpdate({ backgroundImage: e.target.value })}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Visual Effects */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Визуальные эффекты</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="containerAlpha">Прозрачность</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="containerAlpha"
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={(localWidget as IContainerWidget).props.alpha !== undefined ? (localWidget as IContainerWidget).props.alpha : 100}
+                      onChange={(e) => handlePropsUpdate({ alpha: Number(e.target.value) })}
+                      className="flex-1"
+                    />
+                    <span className="text-sm text-muted-foreground w-12">
+                      {(localWidget as IContainerWidget).props.alpha !== undefined ? (localWidget as IContainerWidget).props.alpha : 100}%
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="containerRotation">Поворот</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="containerRotation"
+                      type="range"
+                      min="0"
+                      max="360"
+                      value={(localWidget as IContainerWidget).props.rotation !== undefined ? (localWidget as IContainerWidget).props.rotation : 0}
+                      onChange={(e) => handlePropsUpdate({ rotation: Number(e.target.value) })}
+                      className="flex-1"
+                    />
+                    <span className="text-sm text-muted-foreground w-12">
+                      {(localWidget as IContainerWidget).props.rotation !== undefined ? (localWidget as IContainerWidget).props.rotation : 0}°
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Borders */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Границы</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Цвет</Label>
+                    <Input
+                      type="color"
+                      value={(localWidget as IContainerWidget).props.border?.color || '#cccccc'}
+                      onChange={(e) => {
+                        const currentBorder = (localWidget as IContainerWidget).props.border;
+                        if (currentBorder && typeof currentBorder === 'object') {
+                          handlePropsUpdate({ 
+                            border: { 
+                              ...currentBorder, 
+                              color: e.target.value 
+                            } 
+                          });
+                        } else {
+                          // Create new border object
+                          handlePropsUpdate({ 
+                            border: { 
+                              color: e.target.value,
+                              width: 2,
+                              style: 'solid',
+                              radius: { topLeft: 8, topRight: 8, bottomLeft: 8, bottomRight: 8 }
+                            } 
+                          });
+                        }
+                      }}
+                      className="h-10"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Толщина</Label>
+                    <Input
+                      type="number"
+                      value={(localWidget as IContainerWidget).props.border?.width || 2}
+                      onChange={(e) => {
+                        const currentBorder = (localWidget as IContainerWidget).props.border;
+                        if (currentBorder && typeof currentBorder === 'object') {
+                          handlePropsUpdate({ 
+                            border: { 
+                              ...currentBorder, 
+                              width: Number(e.target.value) 
+                            } 
+                          });
+                        } else {
+                          // Create new border object
+                          handlePropsUpdate({ 
+                            border: { 
+                              color: '#cccccc',
+                              width: Number(e.target.value),
+                              style: 'solid',
+                              radius: { topLeft: 8, topRight: 8, bottomLeft: 8, bottomRight: 8 }
+                            } 
+                          });
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs text-muted-foreground">Стиль</Label>
+                  <Select
+                    value={(localWidget as IContainerWidget).props.border?.style || 'solid'}
+                    onValueChange={(value) => {
+                      const currentBorder = (localWidget as IContainerWidget).props.border;
+                      if (currentBorder && typeof currentBorder === 'object') {
+                        handlePropsUpdate({ 
+                          border: { 
+                            ...currentBorder, 
+                            style: value as any 
+                          } 
+                        });
+                      } else {
+                        // Create new border object
+                        handlePropsUpdate({ 
+                          border: { 
+                            color: '#cccccc',
+                            width: 2,
+                            style: value as any,
+                            radius: { topLeft: 8, topRight: 8, bottomLeft: 8, bottomRight: 8 }
+                          } 
+                        });
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="solid">Сплошная</SelectItem>
+                      <SelectItem value="dashed">Пунктирная</SelectItem>
+                      <SelectItem value="dotted">Точечная</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Радиус скругления</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Верх-лево</Label>
+                      <Input
+                        type="number"
+                        value={(localWidget as IContainerWidget).props.border?.radius?.topLeft || 8}
+                        onChange={(e) => {
+                          const currentBorder = (localWidget as IContainerWidget).props.border;
+                          if (currentBorder && typeof currentBorder === 'object' && currentBorder.radius) {
+                            handlePropsUpdate({ 
+                              border: { 
+                                ...currentBorder, 
+                                radius: { 
+                                  ...currentBorder.radius, 
+                                  topLeft: Number(e.target.value) 
+                                } 
+                              } 
+                            });
+                          } else {
+                            // Create new border object
+                            handlePropsUpdate({ 
+                              border: { 
+                                color: '#cccccc',
+                                width: 2,
+                                style: 'solid',
+                                radius: { 
+                                  topLeft: Number(e.target.value), 
+                                  topRight: 8, 
+                                  bottomLeft: 8, 
+                                  bottomRight: 8 
+                                }
+                              } 
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Верх-право</Label>
+                      <Input
+                        type="number"
+                        value={(localWidget as IContainerWidget).props.border?.radius?.topRight || 8}
+                        onChange={(e) => {
+                          const currentBorder = (localWidget as IContainerWidget).props.border;
+                          if (currentBorder && typeof currentBorder === 'object' && currentBorder.radius) {
+                            handlePropsUpdate({ 
+                              border: { 
+                                ...currentBorder, 
+                                radius: { 
+                                  ...currentBorder.radius, 
+                                  topRight: Number(e.target.value) 
+                                } 
+                              } 
+                            });
+                          } else {
+                            // Create new border object
+                            handlePropsUpdate({ 
+                              border: { 
+                                color: '#cccccc',
+                                width: 2,
+                                style: 'solid',
+                                radius: { 
+                                  topLeft: 8, 
+                                  topRight: Number(e.target.value), 
+                                  bottomLeft: 8, 
+                                  bottomRight: 8 
+                                }
+                              } 
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Низ-лево</Label>
+                      <Input
+                        type="number"
+                        value={(localWidget as IContainerWidget).props.border?.radius?.bottomLeft || 8}
+                        onChange={(e) => {
+                          const currentBorder = (localWidget as IContainerWidget).props.border;
+                          if (currentBorder && typeof currentBorder === 'object' && currentBorder.radius) {
+                            handlePropsUpdate({ 
+                              border: { 
+                                ...currentBorder, 
+                                radius: { 
+                                  ...currentBorder.radius, 
+                                  bottomLeft: Number(e.target.value) 
+                                } 
+                              } 
+                            });
+                          } else {
+                            // Create new border object
+                            handlePropsUpdate({ 
+                              border: { 
+                                color: '#cccccc',
+                                width: 2,
+                                style: 'solid',
+                                radius: { 
+                                  topLeft: 8, 
+                                  topRight: 8, 
+                                  bottomLeft: Number(e.target.value), 
+                                  bottomRight: 8 
+                                }
+                              } 
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Низ-право</Label>
+                      <Input
+                        type="number"
+                        value={(localWidget as IContainerWidget).props.border?.radius?.bottomRight || 8}
+                        onChange={(e) => {
+                          const currentBorder = (localWidget as IContainerWidget).props.border;
+                          if (currentBorder && typeof currentBorder === 'object' && currentBorder.radius) {
+                            handlePropsUpdate({ 
+                              border: { 
+                                ...currentBorder, 
+                                radius: { 
+                                  ...currentBorder.radius, 
+                                  bottomRight: Number(e.target.value) 
+                                } 
+                              } 
+                            });
+                          } else {
+                            // Create new border object
+                            handlePropsUpdate({ 
+                              border: { 
+                                color: '#cccccc',
+                                width: 2,
+                                style: 'solid',
+                                radius: { 
+                                  topLeft: 8, 
+                                  topRight: 8, 
+                                  bottomLeft: 8, 
+                                  bottomRight: Number(e.target.value) 
+                                }
+                              } 
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Scrolling and Clipping */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Скроллинг и обрезка</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Режим скроллинга</Label>
+                  <Select
+                    value={(localWidget as IContainerWidget).props.scrollMode || 'none'}
+                    onValueChange={(value) => handlePropsUpdate({ scrollMode: value as any })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Отключен</SelectItem>
+                      <SelectItem value="vertical">Вертикальный</SelectItem>
+                      <SelectItem value="horizontal">Горизонтальный</SelectItem>
+                      <SelectItem value="both">Оба направления</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="containerClipContent"
+                    checked={(localWidget as IContainerWidget).props.clipContent || false}
+                    onChange={(e) => handlePropsUpdate({ clipContent: e.target.checked })}
+                    className="rounded"
+                  />
+                  <Label htmlFor="containerClipContent" className="text-sm">Обрезать содержимое</Label>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+          );
+        })()}
 
         {localWidget && localWidget.type === 'divider' && (
           <Card>

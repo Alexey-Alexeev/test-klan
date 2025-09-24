@@ -20,7 +20,7 @@ export interface IWidgetStyle {
 }
 
 // Widget types
-export type WidgetType = 'button' | 'text' | 'input' | 'image' | 'card' | 'container' | 'divider' | 'spacer' | 'icon' | 'badge' | 'avatar' | 'progress' | 'checkbox' | 'radio' | 'select' | 'textarea' | 'slider' | 'switch' | 'tabs' | 'accordion';
+export type WidgetType = 'button' | 'text' | 'input' | 'image' | 'card' | 'divider' | 'spacer' | 'icon' | 'badge' | 'avatar' | 'progress' | 'checkbox' | 'radio' | 'select' | 'textarea' | 'slider' | 'switch' | 'tabs' | 'accordion';
 
 export interface IWidgetBase {
   id: string;
@@ -81,18 +81,6 @@ export interface ICardWidget extends IWidgetBase {
   };
 }
 
-export interface IContainerWidget extends IWidgetBase {
-  type: 'container';
-  props: {
-    layout: 'flex' | 'grid' | 'block';
-    direction: 'row' | 'column';
-    justifyContent: 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around';
-    alignItems: 'flex-start' | 'center' | 'flex-end' | 'stretch';
-    gap: number;
-    padding: number;
-    children?: string[]; // IDs of child widgets
-  };
-}
 
 export interface IDividerWidget extends IWidgetBase {
   type: 'divider';
@@ -228,7 +216,6 @@ export type IWidget =
   | IInputWidget 
   | IImageWidget 
   | ICardWidget
-  | IContainerWidget
   | IDividerWidget
   | ISpacerWidget
   | IIconWidget

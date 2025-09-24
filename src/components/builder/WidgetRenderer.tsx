@@ -8,7 +8,6 @@ import { TextWidget } from '../widgets/TextWidget';
 import { InputWidget } from '../widgets/InputWidget';
 import { ImageWidget } from '../widgets/ImageWidget';
 import { CardWidget } from '../widgets/CardWidget';
-import { ContainerWidget } from '../widgets/ContainerWidget';
 import { DividerWidget } from '../widgets/DividerWidget';
 import { SpacerWidget } from '../widgets/SpacerWidget';
 import { IconWidget } from '../widgets/IconWidget';
@@ -260,8 +259,6 @@ export function WidgetRenderer({ widget, isSelected, isEditable }: WidgetCompone
         return <ImageWidget {...commonProps} />;
       case 'card':
         return <CardWidget {...commonProps} />;
-      case 'container':
-        return <ContainerWidget {...commonProps} />;
       case 'divider':
         return <DividerWidget {...commonProps} />;
       case 'spacer':
