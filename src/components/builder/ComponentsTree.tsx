@@ -135,7 +135,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onClick={() => onSelect(widget.id)}
-        draggable={widget.type !== 'container'}
+        draggable={true}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}

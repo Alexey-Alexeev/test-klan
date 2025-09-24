@@ -1,7 +1,7 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { selectWidget, addWidget, setPanOffset, setZoom, setCanvasSize, toggleCanvasSizeLock } from '../../features/canvas/canvasSlice';
+import { selectWidget, addWidget, updateWidget, setPanOffset, setZoom, setCanvasSize, toggleCanvasSizeLock } from '../../features/canvas/canvasSlice';
 import { createDefaultWidget } from '../../lib/widgetDefaults';
 import { WidgetRenderer } from './WidgetRenderer';
 import { Ruler } from './Ruler';
@@ -68,6 +68,7 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     const widgetType = e.dataTransfer.getData('widget-type');
+    const widgetId = e.dataTransfer.getData('widget-id');
     
     if (widgetType && canvasRef.current) {
       const rect = canvasRef.current.getBoundingClientRect();
@@ -79,11 +80,14 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
         ? { x: Math.round(x / snapSize) * snapSize, y: Math.round(y / snapSize) * snapSize }
         : { x, y };
 
-      // Check if drop is inside a container
-      const containers = widgets.filter(w => w.type === 'container' && !w.parentId);
+      // Check if drop is inside a container (allow nested containers)
+      const containers = widgets.filter(w => w.type === 'container');
       let targetContainer = null;
       
-      for (const container of containers) {
+      // Sort containers by z-index (highest first) to check nested containers first
+      const sortedContainers = containers.sort((a, b) => b.zIndex - a.zIndex);
+      
+      for (const container of sortedContainers) {
         const containerRect = {
           left: container.position.x,
           top: container.position.y,
@@ -135,6 +139,57 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
       
       if (widget) {
         dispatch(addWidget(widget));
+      }
+    } else if (widgetId && canvasRef.current) {
+      // Handle moving existing widget to a container
+      const rect = canvasRef.current.getBoundingClientRect();
+      const x = (e.clientX - rect.left - (panOffset?.x || 0)) / zoom;
+      const y = (e.clientY - rect.top - (panOffset?.y || 0)) / zoom;
+      
+      // Check if drop is inside a container
+      const containers = widgets.filter(w => w.type === 'container');
+      let targetContainer = null;
+      
+      // Sort containers by z-index (highest first) to check nested containers first
+      const sortedContainers = containers.sort((a, b) => b.zIndex - a.zIndex);
+      
+      for (const container of sortedContainers) {
+        const containerRect = {
+          left: container.position.x,
+          top: container.position.y,
+          right: container.position.x + container.size.width,
+          bottom: container.position.y + container.size.height
+        };
+        
+        if (x >= containerRect.left && x <= containerRect.right && 
+            y >= containerRect.top && y <= containerRect.bottom) {
+          targetContainer = container;
+          break;
+        }
+      }
+
+      if (targetContainer) {
+        // Move widget to container
+        const widget = widgets.find(w => w.id === widgetId);
+        if (widget && widget.id !== targetContainer.id) {
+          // Update widget's parentId
+          dispatch(updateWidget({ id: widgetId, updates: { parentId: targetContainer.id } }));
+          
+          // Add widget to container's children array
+          const containerWidget = targetContainer as any;
+          if (containerWidget.props && containerWidget.props.children) {
+            const updatedChildren = [...containerWidget.props.children, widgetId];
+            dispatch(updateWidget({ 
+              id: targetContainer.id, 
+              updates: { 
+                props: { 
+                  ...containerWidget.props, 
+                  children: updatedChildren 
+                } 
+              } 
+            }));
+          }
+        }
       }
     }
     setIsDraggingWidget(false);
