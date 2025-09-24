@@ -288,6 +288,17 @@ export const ComponentsTree: React.FC = () => {
       ancestor = ancestor.parentId ? widgets.find(w => w.id === ancestor!.parentId) : undefined;
     }
 
+    // If moving to the same parent, just reorder (don't detach and reattach)
+    if (widget.parentId === containerId) {
+      // Just ensure the widget is at the end of the children array
+      const containerProps: any = (container as any).props || {};
+      const children: string[] = containerProps.children || [];
+      const filteredChildren = children.filter(id => id !== widgetId);
+      const reorderedChildren = [...filteredChildren, widgetId];
+      dispatch(updateWidget({ id: containerId, updates: { props: { ...containerProps, children: reorderedChildren } } }));
+      return;
+    }
+
     detachFromParent(widgetId);
     moveWidgetToParent(widgetId, containerId);
   };
