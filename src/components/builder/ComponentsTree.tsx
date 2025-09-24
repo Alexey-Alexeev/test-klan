@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MoreHorizontal, Trash2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +20,7 @@ interface TreeNodeProps {
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
   onMoveToContainer?: (widgetId: string, containerId: string) => void;
+  onMoveToRoot?: (widgetId: string) => void;
   isExpandable: boolean;
   isExpanded: boolean;
   onToggleExpand: (id: string) => void;
@@ -32,12 +33,14 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   onSelect,
   onDelete,
   onMoveToContainer,
+  onMoveToRoot,
   isExpandable,
   isExpanded,
-  onToggleExpand
+  onToggleExpand,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const isRootNode = widget.id === 'root';
   
   const getWidgetIcon = (type: string) => {
     const icons: Record<string, string> = {
@@ -88,54 +91,70 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   };
 
   const handleDragStart = (e: React.DragEvent) => {
+    if (isRootNode) return;
     e.dataTransfer.setData('widget-id', widget.id);
     e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    if (widget.type === 'container') {
+    if (widget.type === 'container' || isRootNode) {
       setIsDragOver(true);
       e.dataTransfer.dropEffect = 'move';
     }
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
-    if (widget.type === 'container') {
+    if (widget.type === 'container' || isRootNode) {
       setIsDragOver(false);
     }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    const draggedWidgetId = e.dataTransfer.getData('widget-id');
+    if (!draggedWidgetId || draggedWidgetId === widget.id) {
+      setIsDragOver(false);
+      return;
+    }
+
+    if (isRootNode) {
+      onMoveToRoot?.(draggedWidgetId);
+      setIsDragOver(false);
+      return;
+    }
+
     if (widget.type === 'container') {
-      const draggedWidgetId = e.dataTransfer.getData('widget-id');
-      if (draggedWidgetId && draggedWidgetId !== widget.id && onMoveToContainer) {
-        onMoveToContainer(draggedWidgetId, widget.id);
-      }
+      onMoveToContainer?.(draggedWidgetId, widget.id);
       setIsDragOver(false);
     }
   };
 
-
-
   return (
     <div className="select-none">
       <div
-        className={`flex items-center gap-2 py-1 px-2 rounded cursor-pointer transition-colors ${
-          isSelected 
-            ? 'bg-primary text-primary-foreground' 
-            : isHovered 
-              ? 'bg-muted' 
-              : isDragOver && widget.type === 'container'
-                ? 'bg-blue-100 border-2 border-blue-300'
-                : 'hover:bg-muted/50'
-        }`}
+        className={`flex items-center gap-2 py-1 px-2 rounded transition-colors ${
+          isRootNode
+            ? isDragOver
+              ? 'bg-blue-100 border border-blue-300'
+              : 'bg-muted/50 border-b border-border'
+            : isSelected
+              ? 'bg-primary text-primary-foreground'
+              : isHovered
+                ? 'bg-muted'
+                : isDragOver && widget.type === 'container'
+                  ? 'bg-blue-100 border-2 border-blue-300'
+                  : 'hover:bg-muted/50'
+        } ${isRootNode ? 'cursor-default font-medium' : 'cursor-pointer group'}`}
         style={{ paddingLeft: `${level * 16 + 8}px` }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        onClick={() => onSelect(widget.id)}
-        draggable={true}
+        onClick={() => {
+          if (!isRootNode) {
+            onSelect(widget.id);
+          }
+        }}
+        draggable={!isRootNode}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -160,34 +179,42 @@ const TreeNode: React.FC<TreeNodeProps> = ({
         <span className="text-sm">{getWidgetIcon(widget.type)}</span>
 
         {/* Widget name */}
-        <span className="flex-1 text-sm truncate">{getWidgetName(widget)}</span>
+        <span className={`flex-1 text-sm truncate ${isRootNode ? 'font-medium' : ''}`}>
+          {getWidgetName(widget)}
+        </span>
 
         {/* Widget type badge */}
-        <Badge variant="secondary" className="text-xs">
-          {widget.type}
-        </Badge>
+        {isRootNode ? (
+          <Badge variant="outline" className="text-xs">Canvas</Badge>
+        ) : (
+          <Badge variant="secondary" className="text-xs">
+            {widget.type}
+          </Badge>
+        )}
 
         {/* Actions */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-4 w-4 p-0 hover:bg-transparent"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreHorizontal className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => onDelete(widget.id)}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        {!isRootNode && (
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-4 w-4 p-0 hover:bg-transparent"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreHorizontal className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => onDelete(widget.id)}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -218,31 +245,69 @@ export const ComponentsTree: React.FC = () => {
     });
   };
 
-  const handleMoveToContainer = (widgetId: string, containerId: string) => {
-    // Find the widget and container
+  const detachFromParent = (widgetId: string) => {
     const widget = widgets.find(w => w.id === widgetId);
-    const container = widgets.find(w => w.id === containerId);
-    
-    if (widget && container && container.type === 'container') {
-      // Update widget's parentId
+    if (!widget || !widget.parentId) return;
+
+    const parent = widgets.find(w => w.id === widget.parentId);
+    if (!parent || parent.type !== 'container') return;
+
+    const parentProps: any = (parent as any).props || {};
+    const parentChildren: string[] = parentProps.children || [];
+    const pruned = parentChildren.filter(id => id !== widgetId);
+    dispatch(updateWidget({ id: parent.id, updates: { props: { ...parentProps, children: pruned } } }));
+  };
+
+  const moveWidgetToParent = (widgetId: string, containerId: string | null) => {
+    if (containerId) {
       dispatch(updateWidget({ id: widgetId, updates: { parentId: containerId } }));
-      
-      // Add widget to container's children array
-      const containerWidget = container as any;
-      if (containerWidget.props && containerWidget.props.children) {
-        const updatedChildren = [...containerWidget.props.children, widgetId];
-        dispatch(updateWidget({ 
-          id: containerId, 
-          updates: { 
-            props: { 
-              ...containerWidget.props, 
-              children: updatedChildren 
-            } 
-          } 
-        }));
+      const container = widgets.find(w => w.id === containerId);
+      if (container && container.type === 'container') {
+        const containerProps: any = (container as any).props || {};
+        const children: string[] = containerProps.children || [];
+        if (!children.includes(widgetId)) {
+          dispatch(updateWidget({ id: containerId, updates: { props: { ...containerProps, children: [...children, widgetId] } } }));
+        }
       }
+    } else {
+      dispatch(updateWidget({ id: widgetId, updates: { parentId: null as any } }));
     }
   };
+
+  const handleMoveToContainer = (widgetId: string, containerId: string) => {
+    if (widgetId === containerId) return;
+
+    const widget = widgets.find(w => w.id === widgetId);
+    const container = widgets.find(w => w.id === containerId);
+    if (!widget || !container || container.type !== 'container') return;
+
+    // Prevent cyclic nesting
+    let ancestor: typeof widget | undefined = container;
+    while (ancestor) {
+      if (ancestor.id === widgetId) return;
+      ancestor = ancestor.parentId ? widgets.find(w => w.id === ancestor!.parentId) : undefined;
+    }
+
+    detachFromParent(widgetId);
+    moveWidgetToParent(widgetId, containerId);
+  };
+
+  const handleMoveToRoot = (widgetId: string) => {
+    detachFromParent(widgetId);
+    moveWidgetToParent(widgetId, null);
+  };
+
+  // Handle Delete key for any selected widget
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Delete' && selectedWidgetId) {
+        handleDelete(selectedWidgetId);
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedWidgetId]);
 
   const renderTree = (parentId: string | null, level: number = 0): React.ReactNode => {
     // Get widgets for this level
@@ -300,6 +365,7 @@ export const ComponentsTree: React.FC = () => {
             onSelect={handleSelect}
             onDelete={handleDelete}
             onMoveToContainer={handleMoveToContainer}
+            onMoveToRoot={handleMoveToRoot}
             isExpandable={canHaveChildren}
             isExpanded={isExpanded}
             onToggleExpand={handleToggleExpand}
@@ -322,25 +388,8 @@ export const ComponentsTree: React.FC = () => {
       </CardHeader>
       <CardContent className="p-0">
         <div className="space-y-1">
-          {/* Root component */}
-          <div className="p-2 border-b">
-            <div className="flex items-center gap-2">
-              <span className="text-sm">📱</span>
-              <span className="text-sm font-medium">Root Component</span>
-              <Badge variant="outline" className="text-xs">
-                Canvas
-              </Badge>
-            </div>
-          </div>
-          
           {/* Tree nodes */}
-          {widgets.length > 0 ? (
-            renderTree(null)
-          ) : (
-            <div className="p-4 text-center text-muted-foreground text-sm">
-              No components yet. Drag widgets from the sidebar to start building.
-            </div>
-          )}
+          {renderTree(null)}
         </div>
       </CardContent>
     </Card>

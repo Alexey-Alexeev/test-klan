@@ -84,26 +84,42 @@ const canvasSlice = createSlice({
     },
 
     deleteWidget: (state, action: PayloadAction<string>) => {
-      const widgetId = action.payload;
-      const widgetToDelete = state.widgets.find(w => w.id === widgetId);
-      
-      // If widget has a parent container, remove it from parent's children array
-      if (widgetToDelete?.parentId) {
-        const parentContainer = state.widgets.find(w => w.id === widgetToDelete.parentId);
-        if (parentContainer && parentContainer.type === 'container') {
-          const container = parentContainer as any;
-          if (container.props && container.props.children) {
-            container.props.children = container.props.children.filter((id: string) => id !== widgetId);
+      const rootId = action.payload;
+      const toDeleteIds = new Set<string>();
+
+      // Depth-first collect all descendants if container
+      const collect = (id: string) => {
+        const node = state.widgets.find(w => w.id === id);
+        if (!node) return;
+        toDeleteIds.add(id);
+        if (node.type === 'container') {
+          const container = node as any;
+          const children: string[] = container.props?.children || [];
+          children.forEach(childId => collect(childId));
+        }
+      };
+
+      collect(rootId);
+
+      // Remove references from any parent containers
+      state.widgets.forEach(w => {
+        if (w.type === 'container') {
+          const container = w as any;
+          const children: string[] = container.props?.children || [];
+          if (children.length) {
+            container.props.children = children.filter((id: string) => !toDeleteIds.has(id));
           }
         }
-      }
-      
-      state.widgets = state.widgets.filter(w => w.id !== widgetId);
-      
-      if (state.selectedWidgetId === widgetId) {
+      });
+
+      // Remove nodes
+      state.widgets = state.widgets.filter(w => !toDeleteIds.has(w.id));
+
+      // Clear selection if needed
+      if (state.selectedWidgetId && toDeleteIds.has(state.selectedWidgetId)) {
         state.selectedWidgetId = null;
       }
-      
+
       // Auto-unlock canvas size when all containers are deleted
       const hasContainers = state.widgets.some(w => w.type === 'container');
       if (!hasContainers) {

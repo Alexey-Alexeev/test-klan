@@ -80,23 +80,26 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
         ? { x: Math.round(x / snapSize) * snapSize, y: Math.round(y / snapSize) * snapSize }
         : { x, y };
 
-      // Check if drop is inside a container (allow nested containers)
+      // Check if drop is inside a container (supports nested containers)
       const containers = widgets.filter(w => w.type === 'container');
-      let targetContainer = null;
-      
-      // Sort containers by z-index (highest first) to check nested containers first
-      const sortedContainers = containers.sort((a, b) => b.zIndex - a.zIndex);
-      
+      let targetContainer = null as (typeof widgets)[number] | null;
+      const getAbsoluteRect = (cont: typeof widgets[number]) => {
+        let absX = cont.position.x;
+        let absY = cont.position.y;
+        let cursor: typeof widgets[number] | undefined = cont;
+        while (cursor && cursor.parentId) {
+          const parent = widgets.find(w => w.id === cursor!.parentId);
+          if (!parent) break;
+          absX += parent.position.x;
+          absY += parent.position.y;
+          cursor = parent;
+        }
+        return { left: absX, top: absY, right: absX + cont.size.width, bottom: absY + cont.size.height };
+      };
+      const sortedContainers = [...containers].sort((a, b) => b.zIndex - a.zIndex);
       for (const container of sortedContainers) {
-        const containerRect = {
-          left: container.position.x,
-          top: container.position.y,
-          right: container.position.x + container.size.width,
-          bottom: container.position.y + container.size.height
-        };
-        
-        if (x >= containerRect.left && x <= containerRect.right && 
-            y >= containerRect.top && y <= containerRect.bottom) {
+        const rectAbs = getAbsoluteRect(container);
+        if (x >= rectAbs.left && x <= rectAbs.right && y >= rectAbs.top && y <= rectAbs.bottom) {
           targetContainer = container;
           break;
         }
@@ -105,22 +108,12 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
       let widget;
       
       if (targetContainer) {
-        // If dropped inside a container, create widget with relative position
-        const relativePosition = {
-          x: position.x - targetContainer.position.x,
-          y: position.y - targetContainer.position.y
-        };
+        // Create with position relative to absolute container origin
+        const abs = getAbsoluteRect(targetContainer);
+        const relativePosition = { x: position.x - abs.left, y: position.y - abs.top };
         widget = createDefaultWidget(widgetType, relativePosition);
         if (widget) {
           widget.parentId = targetContainer.id;
-          // Add widget to container's children array
-          const containerIndex = widgets.findIndex(w => w.id === targetContainer.id);
-          if (containerIndex !== -1) {
-            const container = widgets[containerIndex] as any;
-            if (container.props && container.props.children) {
-              container.props.children.push(widget.id);
-            }
-          }
         }
       } else {
         // Create widget with global position for root level
@@ -139,6 +132,15 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
       
       if (widget) {
         dispatch(addWidget(widget));
+        if (targetContainer && widget.parentId === targetContainer.id) {
+          const container = widgets.find(w => w.id === targetContainer.id);
+          if (container) {
+            const containerWidget = container as any;
+            const children: string[] = containerWidget.props?.children || [];
+            const updatedChildren = [...children, widget.id];
+            dispatch(updateWidget({ id: targetContainer.id, updates: { props: { ...containerWidget.props, children: updatedChildren } } }));
+          }
+        }
       }
     } else if (widgetId && canvasRef.current) {
       // Handle moving existing widget to a container
@@ -146,49 +148,62 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
       const x = (e.clientX - rect.left - (panOffset?.x || 0)) / zoom;
       const y = (e.clientY - rect.top - (panOffset?.y || 0)) / zoom;
       
-      // Check if drop is inside a container
+      // Check if drop is inside a container (supports nested containers)
       const containers = widgets.filter(w => w.type === 'container');
-      let targetContainer = null;
-      
-      // Sort containers by z-index (highest first) to check nested containers first
-      const sortedContainers = containers.sort((a, b) => b.zIndex - a.zIndex);
-      
+      let targetContainer = null as (typeof widgets)[number] | null;
+      const getAbsRectMove = (cont: typeof widgets[number]) => {
+        let absX = cont.position.x;
+        let absY = cont.position.y;
+        let cursor: typeof widgets[number] | undefined = cont;
+        while (cursor && cursor.parentId) {
+          const parent = widgets.find(w => w.id === cursor!.parentId);
+          if (!parent) break;
+          absX += parent.position.x;
+          absY += parent.position.y;
+          cursor = parent;
+        }
+        return { left: absX, top: absY, right: absX + cont.size.width, bottom: absY + cont.size.height };
+      };
+      const sortedContainers = [...containers].sort((a, b) => b.zIndex - a.zIndex);
       for (const container of sortedContainers) {
-        const containerRect = {
-          left: container.position.x,
-          top: container.position.y,
-          right: container.position.x + container.size.width,
-          bottom: container.position.y + container.size.height
-        };
-        
-        if (x >= containerRect.left && x <= containerRect.right && 
-            y >= containerRect.top && y <= containerRect.bottom) {
+        const rectAbs = getAbsRectMove(container);
+        if (x >= rectAbs.left && x <= rectAbs.right && y >= rectAbs.top && y <= rectAbs.bottom) {
           targetContainer = container;
           break;
         }
       }
 
       if (targetContainer) {
-        // Move widget to container
-        const widget = widgets.find(w => w.id === widgetId);
-        if (widget && widget.id !== targetContainer.id) {
-          // Update widget's parentId
-          dispatch(updateWidget({ id: widgetId, updates: { parentId: targetContainer.id } }));
-          
-          // Add widget to container's children array
-          const containerWidget = targetContainer as any;
-          if (containerWidget.props && containerWidget.props.children) {
-            const updatedChildren = [...containerWidget.props.children, widgetId];
-            dispatch(updateWidget({ 
-              id: targetContainer.id, 
-              updates: { 
-                props: { 
-                  ...containerWidget.props, 
-                  children: updatedChildren 
-                } 
-              } 
-            }));
+        // Move widget to container: remove from old parent, update parentId, add to new children
+        const moved = widgets.find(w => w.id === widgetId);
+        if (moved && moved.id !== targetContainer.id) {
+          if (moved.parentId) {
+            const oldParent = widgets.find(w => w.id === moved.parentId);
+            if (oldParent) {
+              const oldProps: any = (oldParent as any).props || {};
+              const oldChildren: string[] = oldProps.children || [];
+              const pruned = oldChildren.filter(id => id !== widgetId);
+              dispatch(updateWidget({ id: oldParent.id, updates: { props: { ...oldProps, children: pruned } } }));
+            }
           }
+          dispatch(updateWidget({ id: widgetId, updates: { parentId: targetContainer.id } }));
+          const containerWidget = targetContainer as any;
+          const currentChildren: string[] = containerWidget.props?.children || [];
+          const updatedChildren = [...currentChildren, widgetId];
+          dispatch(updateWidget({ id: targetContainer.id, updates: { props: { ...containerWidget.props, children: updatedChildren } } }));
+        }
+      } else {
+        // Move widget to root level: remove from old parent, set parentId to null
+        const moved = widgets.find(w => w.id === widgetId);
+        if (moved && moved.parentId) {
+          const oldParent = widgets.find(w => w.id === moved.parentId);
+          if (oldParent) {
+            const oldProps: any = (oldParent as any).props || {};
+            const oldChildren: string[] = oldProps.children || [];
+            const pruned = oldChildren.filter(id => id !== widgetId);
+            dispatch(updateWidget({ id: oldParent.id, updates: { props: { ...oldProps, children: pruned } } }));
+          }
+          dispatch(updateWidget({ id: widgetId, updates: { parentId: null as any } }));
         }
       }
     }
