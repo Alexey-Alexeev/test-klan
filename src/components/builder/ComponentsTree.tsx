@@ -10,8 +10,9 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { selectWidget, deleteWidget, updateWidget } from '../../features/canvas/canvasSlice';
+import { addWidget, selectWidget, deleteWidget, updateWidget } from '../../features/canvas/canvasSlice';
 import { IWidget } from '../../types';
+import { createDefaultWidget } from '../../lib/widgetDefaults';
 
 interface TreeNodeProps {
   widget: IWidget;
@@ -22,6 +23,7 @@ interface TreeNodeProps {
   onMoveToContainer?: (widgetId: string, containerId: string) => void;
   onMoveToRoot?: (widgetId: string) => void;
   onRename?: (widgetId: string, newName: string) => void;
+  onAddWidget?: (widgetType: string, dropX: number, dropY: number, targetContainerId: string | null) => void;
   isExpandable: boolean;
   isExpanded: boolean;
   onToggleExpand: (id: string) => void;
@@ -36,6 +38,7 @@ const TreeNode: React.FC<TreeNodeProps & { allWidgets: IWidget[] }> = ({
   onMoveToContainer,
   onMoveToRoot,
   onRename,
+  onAddWidget,
   isExpandable,
   isExpanded,
   onToggleExpand,
@@ -120,21 +123,45 @@ const TreeNode: React.FC<TreeNodeProps & { allWidgets: IWidget[] }> = ({
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+
     const draggedWidgetId = e.dataTransfer.getData('widget-id');
-    if (!draggedWidgetId || draggedWidgetId === widget.id) {
+    const draggedWidgetType = e.dataTransfer.getData('widget-type');
+
+    if (draggedWidgetId && draggedWidgetId === widget.id) {
       setIsDragOver(false);
       return;
     }
 
-    if (isRootNode) {
-      onMoveToRoot?.(draggedWidgetId);
+    if (draggedWidgetType) {
       setIsDragOver(false);
+
+      const dropX = e.clientX;
+      const dropY = e.clientY;
+
+      if (isRootNode) {
+        onAddWidget?.(draggedWidgetType, dropX, dropY, null);
+        return;
+      }
+
+      if (widget.type === 'container') {
+        onAddWidget?.(draggedWidgetType, dropX, dropY, widget.id);
+        return;
+      }
+
       return;
     }
 
-    if (widget.type === 'container') {
-      onMoveToContainer?.(draggedWidgetId, widget.id);
-      setIsDragOver(false);
+    if (draggedWidgetId) {
+      if (isRootNode) {
+        onMoveToRoot?.(draggedWidgetId);
+        setIsDragOver(false);
+        return;
+      }
+
+      if (widget.type === 'container') {
+        onMoveToContainer?.(draggedWidgetId, widget.id);
+        setIsDragOver(false);
+      }
     }
   };
 
@@ -267,6 +294,7 @@ export const ComponentsTree: React.FC = () => {
     dispatch(deleteWidget(id));
   };
 
+
   const handleToggleExpand = (id: string) => {
     // Auto-expand all containers by default
     setExpandedNodes(prev => {
@@ -357,9 +385,38 @@ export const ComponentsTree: React.FC = () => {
     moveWidgetToParent(widgetId, containerId);
   };
 
-  const handleMoveToRoot = (widgetId: string) => {
-    detachFromParent(widgetId);
-    moveWidgetToParent(widgetId, null);
+const handleMoveToRoot = (widgetId: string) => {
+  detachFromParent(widgetId);
+  moveWidgetToParent(widgetId, null);
+};
+
+  const handleAddWidget = (widgetType: string, clientX: number, clientY: number, targetContainerId: string | null) => {
+    const position = { x: clientX || 0, y: clientY || 0 };
+    const newWidget = createDefaultWidget(widgetType, position);
+    if (!newWidget) return;
+
+    if (targetContainerId) {
+      newWidget.parentId = targetContainerId;
+    } else {
+      newWidget.parentId = null;
+    }
+
+    // Persist widget before updating parent structure so reducers see it
+    dispatch(addWidget(newWidget));
+
+    if (newWidget.parentId) {
+      const container = widgets.find(w => w.id === newWidget.parentId);
+      if (container && container.type === 'container') {
+        const containerProps: any = (container as any).props || {};
+        const children: string[] = containerProps.children || [];
+        if (!children.includes(newWidget.id)) {
+          dispatch(updateWidget({ id: newWidget.parentId, updates: { props: { ...containerProps, children: [...children, newWidget.id] } } }));
+        }
+      }
+    }
+
+    // Align widget selection
+    dispatch(selectWidget(newWidget.id));
   };
 
   const handleRename = (widgetId: string, newName: string) => {
@@ -460,6 +517,7 @@ export const ComponentsTree: React.FC = () => {
             onMoveToContainer={handleMoveToContainer}
             onMoveToRoot={handleMoveToRoot}
             onRename={handleRename}
+            onAddWidget={handleAddWidget}
             isExpandable={canHaveChildren}
             isExpanded={isExpanded}
             onToggleExpand={handleToggleExpand}
@@ -490,3 +548,4 @@ export const ComponentsTree: React.FC = () => {
     </Card>
   );
 };
+
