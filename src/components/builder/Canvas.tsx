@@ -109,6 +109,14 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
         widget = createDefaultWidget(widgetType, relativePosition);
         if (widget) {
           widget.parentId = targetContainer.id;
+          // Add widget to container's children array
+          const containerIndex = widgets.findIndex(w => w.id === targetContainer.id);
+          if (containerIndex !== -1) {
+            const container = widgets[containerIndex] as any;
+            if (container.props && container.props.children) {
+              container.props.children.push(widget.id);
+            }
+          }
         }
       } else {
         // Create widget with global position for root level
@@ -246,6 +254,7 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
 
   // Resize canvas handlers
   const onCanvasResizeMouseDown = useCallback((e: React.MouseEvent, direction: 'e' | 's' | 'se' = 'se') => {
+    console.log('Canvas resize mouse down:', direction, 'locked:', isCanvasSizeLocked);
     e.stopPropagation();
     if (isCanvasSizeLocked) return;
     setIsResizingCanvas(true);
@@ -343,11 +352,25 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
             </div>
             <button
               type="button"
-              className="text-xs px-2 py-1 rounded bg-gray-900 text-white hover:bg-gray-800 transition"
-              onClick={(e) => { e.stopPropagation(); dispatch(toggleCanvasSizeLock()); }}
+              className={`text-xs px-2 py-1 rounded transition ${
+                isCanvasSizeLocked && widgets.some(w => w.type === 'container')
+                  ? 'bg-orange-600 text-white cursor-not-allowed opacity-75'
+                  : 'bg-gray-900 text-white hover:bg-gray-800'
+              }`}
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                if (!(isCanvasSizeLocked && widgets.some(w => w.type === 'container'))) {
+                  dispatch(toggleCanvasSizeLock()); 
+                }
+              }}
+              disabled={isCanvasSizeLocked && widgets.some(w => w.type === 'container')}
               aria-label={isCanvasSizeLocked ? 'Разблокировать размер холста' : 'Зафиксировать размер холста'}
             >
-              {isCanvasSizeLocked ? '🔒 Разблокировать размер' : '🔓 Зафиксировать размер'}
+              {isCanvasSizeLocked ? (
+                widgets.some(w => w.type === 'container') 
+                  ? '🔒 Заблокировано (контейнер)' 
+                  : '🔒 Разблокировать размер'
+              ) : '🔓 Зафиксировать размер'}
             </button>
           </div>
         </div>
@@ -375,7 +398,7 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
             onMouseDown={(e) => onCanvasResizeMouseDown(e, 'se')}
             onClick={(e) => e.preventDefault()}
             aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Потянуть из угла для изменения размера'}
-            title={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Потянуть из угла для изменения размера'}
+            title={isCanvasSizeLocked ? (widgets.some(w => w.type === 'container') ? 'Размер заблокирован из-за контейнера' : 'Размер зафиксирован') : 'Потянуть из угла для изменения размера'}
           >
           {/* Layout zones */}
           {/* Зоны как на макете: тонкие направляющие и подписи справа */}
@@ -528,71 +551,81 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
           {/* Drop zone indicator */}
           <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-transparent transition-colors duration-200 ease-in-out" />
 
-          {/* (size/lock moved above smartphone) */}
-          {/* Resize by dragging the smartphone bezel edges */}
-          {/* Bezel resize zones (exactly on the black outer frame) */}
-          <div
-            className={`absolute right-0 top-0 bottom-0 w-[10px] z-30 select-none ${isCanvasSizeLocked ? 'cursor-not-allowed' : 'cursor-e-resize'}`}
-            onMouseDown={(e) => onCanvasResizeMouseDown(e, 'e')}
-            title={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Потяните за правый край (рамка)'}
-          />
-          <div
-            className={`absolute left-0 right-0 bottom-0 h-[10px] z-30 select-none ${isCanvasSizeLocked ? 'cursor-not-allowed' : 'cursor-s-resize'}`}
-            onMouseDown={(e) => onCanvasResizeMouseDown(e, 's')}
-            title={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Потяните за нижний край (рамка)'}
-          />
-          {/* Corner visual handle like DevTools */}
-          {/* DevTools-like visible corner handle (outside black bezel) */}
-          <button
-            type="button"
-            className={`absolute -right-5 -bottom-5 h-5 w-5 bg-transparent shadow-none flex items-center justify-center ${
-              isCanvasSizeLocked ? 'cursor-not-allowed opacity-60' : 'cursor-se-resize'
-            }`}
-            onMouseDown={(e) => onCanvasResizeMouseDown(e, 'se')}
-            onClick={(e) => e.preventDefault()}
-            aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Тянуть за угол'}
-            title={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Тянуть за угол'}
-          >
-            <span className="relative block h-4 w-4">
-              <span className={`absolute right-0 bottom-0 h-0.5 w-3 rotate-45 ${isCanvasSizeLocked ? 'bg-gray-300' : 'bg-red-500'}`} />
-              <span className={`absolute right-0 bottom-1 h-0.5 w-2.5 rotate-45 ${isCanvasSizeLocked ? 'bg-gray-300' : 'bg-red-500'}`} />
-              <span className={`absolute right-0 bottom-2 h-0.5 w-2 rotate-45 ${isCanvasSizeLocked ? 'bg-gray-300' : 'bg-red-500'}`} />
-            </span>
-          </button>
 
-          {/* Visible DevTools-like grab handles outside the frame */}
-          <button
-            type="button"
-            className={`absolute -right-4 top-1/2 -translate-y-1/2 h-4 w-4 rounded-sm border border-white shadow bg-primary/90 text-white z-40 ${
-              isCanvasSizeLocked ? 'cursor-not-allowed opacity-50' : 'cursor-e-resize hover:ring-2 hover:ring-primary'
-            }`}
-            onMouseDown={(e) => onCanvasResizeMouseDown(e, 'e')}
-            onClick={(e) => e.preventDefault()}
-            aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Тянуть за правый край'}
-            title={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Тянуть за правый край'}
-          />
-          <button
-            type="button"
-            className={`absolute left-1/2 -translate-x-1/2 -bottom-4 h-4 w-4 rounded-sm border border-white shadow bg-primary/90 text-white z-40 ${
-              isCanvasSizeLocked ? 'cursor-not-allowed opacity-50' : 'cursor-s-resize hover:ring-2 hover:ring-primary'
-            }`}
-            onMouseDown={(e) => onCanvasResizeMouseDown(e, 's')}
-            onClick={(e) => e.preventDefault()}
-            aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Тянуть за нижний край'}
-            title={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Тянуть за нижний край'}
-          />
-          <button
-            type="button"
-            className={`absolute -right-5 -bottom-5 h-5 w-5 rounded-sm border border-white shadow bg-primary/90 text-white flex items-center justify-center z-40 ${
-              isCanvasSizeLocked ? 'cursor-not-allowed opacity-50' : 'cursor-se-resize hover:ring-2 hover:ring-primary'
-            }`}
-            onMouseDown={(e) => onCanvasResizeMouseDown(e, 'se')}
-            onClick={(e) => e.preventDefault()}
-            aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Тянуть за угол'}
-            title={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Тянуть за угол'}
-          >
-            ↘
-          </button>
+          {/* Canvas resize handles overlay */}
+          <div className="absolute inset-0 pointer-events-none z-[9999]">
+            <div
+              className={`absolute right-0 top-0 bottom-0 w-[12px] ${isCanvasSizeLocked ? 'cursor-not-allowed' : 'cursor-e-resize'}`}
+              data-canvas-resize="e"
+              onMouseDown={(e) => onCanvasResizeMouseDown(e, 'e')}
+              title={isCanvasSizeLocked ? (widgets.some(w => w.type === 'container') ? 'Размер заблокирован из-за контейнера' : 'Размер зафиксирован') : 'Потяните за правый край (рамка)'}
+              style={{ pointerEvents: 'auto' }}
+            />
+            <div
+              className={`absolute left-0 right-0 bottom-0 h-[12px] ${isCanvasSizeLocked ? 'cursor-not-allowed' : 'cursor-s-resize'}`}
+              data-canvas-resize="s"
+              onMouseDown={(e) => onCanvasResizeMouseDown(e, 's')}
+              title={isCanvasSizeLocked ? (widgets.some(w => w.type === 'container') ? 'Размер заблокирован из-за контейнера' : 'Размер зафиксирован') : 'Потяните за нижний край (рамка)'}
+              style={{ pointerEvents: 'auto' }}
+            />
+            <button
+              type="button"
+              className={`absolute -right-5 -bottom-5 h-5 w-5 bg-transparent shadow-none flex items-center justify-center ${
+                isCanvasSizeLocked ? 'cursor-not-allowed opacity-60' : 'cursor-se-resize'
+              }`}
+              data-canvas-resize="se"
+              onMouseDown={(e) => onCanvasResizeMouseDown(e, 'se')}
+              onClick={(e) => e.preventDefault()}
+              aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Тянуть за угол'}
+              title={isCanvasSizeLocked ? (widgets.some(w => w.type === 'container') ? 'Размер заблокирован из-за контейнера' : 'Размер зафиксирован') : 'Тянуть за угол'}
+              style={{ pointerEvents: 'auto' }}
+            >
+              <span className="relative block h-4 w-4">
+                <span className={`absolute right-0 bottom-0 h-0.5 w-3 rotate-45 ${isCanvasSizeLocked ? 'bg-gray-300' : 'bg-red-500'}`} />
+                <span className={`absolute right-0 bottom-1 h-0.5 w-2.5 rotate-45 ${isCanvasSizeLocked ? 'bg-gray-300' : 'bg-red-500'}`} />
+                <span className={`absolute right-0 bottom-2 h-0.5 w-2 rotate-45 ${isCanvasSizeLocked ? 'bg-gray-300' : 'bg-red-500'}`} />
+              </span>
+            </button>
+
+            <button
+              type="button"
+              className={`absolute -right-4 top-1/2 -translate-y-1/2 h-4 w-4 rounded-sm border border-white shadow bg-primary/90 text-white ${
+                isCanvasSizeLocked ? 'cursor-not-allowed opacity-50' : 'cursor-e-resize hover:ring-2 hover:ring-primary'
+              }`}
+              data-canvas-resize="e"
+              onMouseDown={(e) => onCanvasResizeMouseDown(e, 'e')}
+              onClick={(e) => e.preventDefault()}
+              aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Тянуть за правый край'}
+              title={isCanvasSizeLocked ? (widgets.some(w => w.type === 'container') ? 'Размер заблокирован из-за контейнера' : 'Размер зафиксирован') : 'Тянуть за правый край'}
+              style={{ pointerEvents: 'auto' }}
+            />
+            <button
+              type="button"
+              className={`absolute left-1/2 -translate-x-1/2 -bottom-4 h-4 w-4 rounded-sm border border-white shadow bg-primary/90 text-white ${
+                isCanvasSizeLocked ? 'cursor-not-allowed opacity-50' : 'cursor-s-resize hover:ring-2 hover:ring-primary'
+              }`}
+              data-canvas-resize="s"
+              onMouseDown={(e) => onCanvasResizeMouseDown(e, 's')}
+              onClick={(e) => e.preventDefault()}
+              aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Тянуть за нижний край'}
+              title={isCanvasSizeLocked ? (widgets.some(w => w.type === 'container') ? 'Размер заблокирован из-за контейнера' : 'Размер зафиксирован') : 'Тянуть за нижний край'}
+              style={{ pointerEvents: 'auto' }}
+            />
+            <button
+              type="button"
+              className={`absolute -right-5 -bottom-5 h-5 w-5 rounded-sm border border-white shadow bg-primary/90 text-white flex items-center justify-center ${
+                isCanvasSizeLocked ? 'cursor-not-allowed opacity-50' : 'cursor-se-resize hover:ring-2 hover:ring-primary'
+              }`}
+              data-canvas-resize="se"
+              onMouseDown={(e) => onCanvasResizeMouseDown(e, 'se')}
+              onClick={(e) => e.preventDefault()}
+              aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Тянуть за угол'}
+              title={isCanvasSizeLocked ? (widgets.some(w => w.type === 'container') ? 'Размер заблокирован из-за контейнера' : 'Размер зафиксирован') : 'Тянуть за угол'}
+              style={{ pointerEvents: 'auto' }}
+            >
+              ↘
+            </button>
+          </div>
 
           {/* Visible resize hint button at the bottom-right corner */}
           <button
@@ -603,7 +636,7 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
             onMouseDown={(e) => onCanvasResizeMouseDown(e, 'se')}
             onClick={(e) => e.preventDefault()}
             aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Потянуть для изменения размера'}
-            title={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Потяните, чтобы изменить размер'}
+            title={isCanvasSizeLocked ? (widgets.some(w => w.type === 'container') ? 'Размер заблокирован из-за контейнера' : 'Размер зафиксирован') : 'Потяните, чтобы изменить размер'}
           >
             ↘
           </button>

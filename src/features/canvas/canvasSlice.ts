@@ -28,7 +28,10 @@ const canvasSlice = createSlice({
       state.widgets.push(widget);
       state.selectedWidgetId = widget.id;
       
-
+      // Auto-lock canvas size when adding a container
+      if (widget.type === 'container') {
+        state.isCanvasSizeLocked = true;
+      }
     },
     
     updateWidget: (state, action: PayloadAction<{ id: string; updates: Partial<IWidget> }>) => {
@@ -82,10 +85,29 @@ const canvasSlice = createSlice({
 
     deleteWidget: (state, action: PayloadAction<string>) => {
       const widgetId = action.payload;
+      const widgetToDelete = state.widgets.find(w => w.id === widgetId);
+      
+      // If widget has a parent container, remove it from parent's children array
+      if (widgetToDelete?.parentId) {
+        const parentContainer = state.widgets.find(w => w.id === widgetToDelete.parentId);
+        if (parentContainer && parentContainer.type === 'container') {
+          const container = parentContainer as any;
+          if (container.props && container.props.children) {
+            container.props.children = container.props.children.filter((id: string) => id !== widgetId);
+          }
+        }
+      }
+      
       state.widgets = state.widgets.filter(w => w.id !== widgetId);
       
       if (state.selectedWidgetId === widgetId) {
         state.selectedWidgetId = null;
+      }
+      
+      // Auto-unlock canvas size when all containers are deleted
+      const hasContainers = state.widgets.some(w => w.type === 'container');
+      if (!hasContainers) {
+        state.isCanvasSizeLocked = false;
       }
     },
 

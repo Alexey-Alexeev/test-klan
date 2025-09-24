@@ -12,6 +12,7 @@ import { DividerWidget } from '../widgets/DividerWidget';
 import { SpacerWidget } from '../widgets/SpacerWidget';
 import { IconWidget } from '../widgets/IconWidget';
 import { BadgeWidget } from '../widgets/BadgeWidget';
+import { ContainerWidget } from '../widgets/ContainerWidget';
 import { SelectionBox } from './SelectionBox';
 
 export function WidgetRenderer({ widget, isSelected, isEditable }: WidgetComponentProps) {
@@ -267,21 +268,26 @@ export function WidgetRenderer({ widget, isSelected, isEditable }: WidgetCompone
         return <IconWidget {...commonProps} />;
       case 'badge':
         return <BadgeWidget {...commonProps} />;
+      case 'container':
+        return <ContainerWidget {...commonProps} />;
       default:
         return null;
     }
   };
 
   if (!isEditable) {
+    // If widget has a parent, use relative positioning
+    const positioning = widget.parentId ? 'relative' : 'absolute';
+    
     return (
       <div
         style={{
-          position: 'absolute',
-          left: widget.position.x,
-          top: widget.position.y,
+          position: positioning,
+          left: widget.parentId ? 0 : widget.position.x,
+          top: widget.parentId ? 0 : widget.position.y,
           width: widget.size.width,
           height: widget.size.height,
-          zIndex: widget.zIndex,
+          zIndex: Math.min(widget.zIndex, 100), // Ensure widgets don't block canvas resize handles
         }}
       >
         {renderWidget()}
@@ -303,13 +309,13 @@ export function WidgetRenderer({ widget, isSelected, isEditable }: WidgetCompone
         style={{
           width: widget.size.width,
           height: widget.size.height,
-          zIndex: widget.zIndex,
+          zIndex: Math.min(widget.zIndex, 100), // Ensure widgets don't block canvas resize handles
         }}
         onClick={handleSelect}
         onDoubleClick={handleDoubleClick}
       >
-        {/* Drag handle overlay */}
-        <div className="widget-handle absolute inset-0 z-10 hover:bg-primary/5 transition-colors" />
+        {/* Drag handle overlay - lower z-index to not block canvas resize handles */}
+        <div className="widget-handle absolute inset-0 z-[1] hover:bg-primary/5 transition-colors" />
         
         {/* Widget content */}
         <div className="relative z-0">

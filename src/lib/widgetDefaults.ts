@@ -18,7 +18,8 @@ import {
   ISliderWidget,
   ISwitchWidget,
   ITabsWidget,
-  IAccordionWidget
+  IAccordionWidget,
+  IContainerWidget
 } from '../types';
 
 export const widgetDefinitions: WidgetDefinition[] = [
@@ -353,6 +354,38 @@ export const widgetDefinitions: WidgetDefinition[] = [
       borderRadius: 8,
     },
     defaultSize: { width: 300, height: 150 },
+  },
+  {
+    type: 'container',
+    name: 'Контейнер',
+    description: 'Контейнер для размещения и выравнивания других элементов',
+    icon: 'Package',
+    category: 'layout',
+        defaultProps: {
+          alignment: 'start',
+          contentAlignment: 'start',
+          direction: 'column',
+          wrap: false,
+          gap: 8,
+          children: [],
+          alpha: 100,
+          rotation: 0,
+          padding: 16,
+          margin: 0,
+          backgroundColor: 'rgba(240, 240, 240, 0.3)',
+          scrollMode: 'none',
+          clipContent: false,
+          widthMode: 'fill',
+          heightMode: 'fixed',
+          heightValue: 200,
+        },
+    defaultStyle: {
+      backgroundColor: 'rgba(240, 240, 240, 0.3)',
+      border: '1px dashed hsl(0 0% 80%)',
+      borderRadius: 8,
+      padding: '16px',
+    },
+    defaultSize: { width: 300, height: 200 },
   },
 ];
 

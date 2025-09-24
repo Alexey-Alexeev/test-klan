@@ -17,10 +17,16 @@ export interface IWidgetStyle {
   borderRadius?: number;
   padding?: string;
   margin?: string;
+  width?: string;
+  height?: string;
+  minWidth?: string;
+  minHeight?: string;
+  maxWidth?: string;
+  maxHeight?: string;
 }
 
 // Widget types
-export type WidgetType = 'button' | 'text' | 'input' | 'image' | 'card' | 'divider' | 'spacer' | 'icon' | 'badge' | 'avatar' | 'progress' | 'checkbox' | 'radio' | 'select' | 'textarea' | 'slider' | 'switch' | 'tabs' | 'accordion';
+export type WidgetType = 'button' | 'text' | 'input' | 'image' | 'card' | 'divider' | 'spacer' | 'icon' | 'badge' | 'avatar' | 'progress' | 'checkbox' | 'radio' | 'select' | 'textarea' | 'slider' | 'switch' | 'tabs' | 'accordion' | 'container' | 'root';
 
 export interface IWidgetBase {
   id: string;
@@ -210,6 +216,41 @@ export interface IAccordionWidget extends IWidgetBase {
   };
 }
 
+export interface IContainerWidget extends IWidgetBase {
+  type: 'container';
+  props: {
+    alignment: 'start' | 'center' | 'end' | 'stretch';
+    contentAlignment: 'start' | 'center' | 'end' | 'space-between' | 'space-around' | 'space-evenly';
+    direction: 'row' | 'column';
+    wrap: boolean;
+    gap: number;
+    children: string[]; // Array of child widget IDs
+    alpha?: number; // Opacity 0-100
+    rotation?: number; // Rotation in degrees
+    padding?: number | { top: number; right: number; bottom: number; left: number };
+    margin?: number | { top: number; right: number; bottom: number; left: number };
+    backgroundColor?: string;
+    backgroundImage?: string;
+    border?: {
+      color: string;
+      width: number;
+      style: 'solid' | 'dashed' | 'dotted';
+      radius?: {
+        topLeft: number;
+        topRight: number;
+        bottomLeft: number;
+        bottomRight: number;
+      };
+    };
+    scrollMode?: 'none' | 'vertical' | 'horizontal' | 'both';
+    clipContent?: boolean;
+    widthMode?: 'fixed' | 'fill' | 'wrap-content';
+    heightMode?: 'fixed' | 'fill' | 'wrap-content';
+    widthValue?: number;
+    heightValue?: number;
+  };
+}
+
 export type IWidget = 
   | IButtonWidget 
   | ITextWidget 
@@ -229,7 +270,8 @@ export type IWidget =
   | ISliderWidget
   | ISwitchWidget
   | ITabsWidget
-  | IAccordionWidget;
+  | IAccordionWidget
+  | IContainerWidget;
 
 // Template interface
 export interface ITemplate {
