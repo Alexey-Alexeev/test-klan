@@ -14,6 +14,8 @@ export function ContainerWidget({ widget, isSelected, onSelect }: WidgetComponen
   const { alignment, wrap } = containerWidget.props;
 
   const getFlexAlignment = () => {
+    const isColumn = containerWidget.props.direction === 'column';
+    
     const mapping = {
       // New grid-based alignment values
       'top-left': { justifyContent: 'flex-start', alignItems: 'flex-start' },
@@ -30,7 +32,20 @@ export function ContainerWidget({ widget, isSelected, onSelect }: WidgetComponen
       'bottom': { justifyContent: 'flex-start', alignItems: 'flex-end' },
     } as const;
 
-    return mapping[alignment] || { justifyContent: 'flex-start', alignItems: 'flex-start' };
+    const baseAlignment = mapping[alignment] || { justifyContent: 'flex-start', alignItems: 'flex-start' };
+    
+    // For column direction, we need to swap justifyContent and alignItems
+    // because in column layout:
+    // - justifyContent controls vertical alignment (top/center/bottom)
+    // - alignItems controls horizontal alignment (left/center/right)
+    if (isColumn) {
+      return {
+        justifyContent: baseAlignment.alignItems,
+        alignItems: baseAlignment.justifyContent
+      };
+    }
+    
+    return baseAlignment;
   };
 
   const flexAlignment = getFlexAlignment();
