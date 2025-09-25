@@ -2,17 +2,21 @@ import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import { historyMiddleware } from '../middleware/historyMiddleware';
+import { runtimeMiddleware } from '../middleware/runtimeMiddleware';
 
 // Import slices
 import canvasSlice from '../features/canvas/canvasSlice';
 import templatesSlice from '../features/templates/templatesSlice';
 import appSlice from '../features/app/appSlice';
 import historySlice from '../features/history/historySlice';
+import widgetsSlice from '../features/widgets/widgetsSlice';
+import stateSlice from '../features/state/stateSlice';
+import eventsSlice from '../features/events/eventsSlice';
 
 const persistConfig = {
   key: 'main-builder',
   storage,
-  whitelist: ['canvas', 'templates'], // Only persist canvas and templates
+  whitelist: ['canvas', 'templates', 'widgets', 'state'], // Persist canvas, templates, widgets, and state
 };
 
 const rootReducer = combineReducers({
@@ -20,6 +24,9 @@ const rootReducer = combineReducers({
   templates: templatesSlice,
   app: appSlice,
   history: historySlice,
+  widgets: widgetsSlice,
+  state: stateSlice,
+  events: eventsSlice,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -31,7 +38,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
       },
-    }).concat(historyMiddleware),
+    }).concat(historyMiddleware, runtimeMiddleware),
 });
 
 export const persistor = persistStore(store);

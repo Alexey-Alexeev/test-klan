@@ -1,0 +1,267 @@
+{
+  "type": "widget_def",
+  "widgetId": "CartItem_v1",
+  "version": "1.0.0",
+  "meta": {
+    "name": "Cart Item",
+    "description": "A reusable cart item component with quantity controls",
+    "author": "BDUI Team",
+    "tags": ["ecommerce", "cart", "item"]
+  },
+  "params": {
+    "productId": {
+      "type": "string",
+      "required": true,
+      "description": "Unique product identifier"
+    },
+    "title": {
+      "type": "string",
+      "required": true,
+      "description": "Product title"
+    },
+    "price": {
+      "type": "number",
+      "default": 0,
+      "required": true,
+      "description": "Product price"
+    },
+    "imageUrl": {
+      "type": "string",
+      "description": "Product image URL"
+    }
+  },
+  "localState": {
+    "count": {
+      "id": "count_state",
+      "key": "count",
+      "type": "number",
+      "value": 1,
+      "scope": "local",
+      "description": "Current quantity in cart"
+    }
+  },
+  "publicApi": {
+    "events": ["item_count_changed", "item_removed"],
+    "methods": {
+      "getCount": {
+        "returns": "number"
+      },
+      "getTotal": {
+        "returns": "number"
+      }
+    }
+  },
+  "content": {
+    "type": "container",
+    "direction": "row",
+    "alignment": "center",
+    "padding": 16,
+    "gap": 12,
+    "style": {
+      "backgroundColor": "white",
+      "border": "1px solid #e5e7eb",
+      "borderRadius": 8
+    },
+    "content": [
+      {
+        "type": "image",
+        "src": "{params.imageUrl}",
+        "style": {
+          "width": "60px",
+          "height": "60px",
+          "borderRadius": 6
+        }
+      },
+      {
+        "type": "container",
+        "direction": "column",
+        "gap": 4,
+        "widthMode": "fill",
+        "content": [
+          {
+            "type": "text",
+            "text": "{params.title}",
+            "style": {
+              "fontSize": 16,
+              "fontWeight": "600",
+              "color": "#1f2937"
+            }
+          },
+          {
+            "type": "text",
+            "text": "${params.price}",
+            "style": {
+              "fontSize": 14,
+              "color": "#6b7280"
+            }
+          }
+        ]
+      },
+      {
+        "type": "container",
+        "direction": "row",
+        "alignment": "center",
+        "gap": 8,
+        "content": [
+          {
+            "type": "button",
+            "text": "−",
+            "variant": "outline",
+            "style": {
+              "width": "32px",
+              "height": "32px",
+              "borderRadius": 6
+            },
+            "actions": [
+              {
+                "id": "decrement_count",
+                "type": "state_update",
+                "params": {
+                  "target": "local.count",
+                  "operation": "decrement",
+                  "by": 1
+                }
+              },
+              {
+                "id": "emit_count_changed",
+                "type": "emit_event",
+                "params": {
+                  "name": "item_count_changed",
+                  "payload": {
+                    "productId": "{params.productId}",
+                    "count": "{local.count}",
+                    "price": "{params.price}"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "{local.count}",
+            "style": {
+              "fontSize": 16,
+              "fontWeight": "600",
+              "minWidth": "24px",
+              "textAlign": "center"
+            }
+          },
+          {
+            "type": "button",
+            "text": "+",
+            "variant": "primary",
+            "style": {
+              "width": "32px",
+              "height": "32px",
+              "borderRadius": 6
+            },
+            "actions": [
+              {
+                "id": "increment_count",
+                "type": "state_update",
+                "params": {
+                  "target": "local.count",
+                  "operation": "increment",
+                  "by": 1
+                }
+              },
+              {
+                "id": "emit_count_changed",
+                "type": "emit_event",
+                "params": {
+                  "name": "item_count_changed",
+                  "payload": {
+                    "productId": "{params.productId}",
+                    "count": "{local.count}",
+                    "price": "{params.price}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "events": [
+    {
+      "id": "item_count_changed_handler",
+      "trigger": {
+        "on": "custom_event",
+        "name": "item_count_changed"
+      },
+      "conditions": [
+        "local.count > 0"
+      ],
+      "actions": [
+        {
+          "id": "update_screen_cart",
+          "type": "state_update",
+          "params": {
+            "target": "screen.cart.items",
+            "operation": "update_by_path",
+            "expression": "screen.cart.items.map(item => item.productId === params.productId ? { ...item, count: local.count } : item)"
+          }
+        },
+        {
+          "id": "recalculate_total",
+          "type": "recalculate",
+          "params": {
+            "target": "screen.cart.total",
+            "formula": "screen.cart.items.reduce((sum, item) => sum + item.count * item.price, 0)"
+          }
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "id": "remove_item_when_zero",
+      "trigger": {
+        "on": "custom_event",
+        "name": "item_count_changed"
+      },
+      "conditions": [
+        "local.count <= 0"
+      ],
+      "actions": [
+        {
+          "id": "remove_from_cart",
+          "type": "state_update",
+          "params": {
+            "target": "screen.cart.items",
+            "operation": "update_by_path",
+            "expression": "screen.cart.items.filter(item => item.productId !== params.productId)"
+          }
+        },
+        {
+          "id": "emit_item_removed",
+          "type": "emit_event",
+          "params": {
+            "name": "item_removed",
+            "payload": {
+              "productId": "{params.productId}"
+            }
+          }
+        },
+        {
+          "id": "recalculate_total_after_removal",
+          "type": "recalculate",
+          "params": {
+            "target": "screen.cart.total",
+            "formula": "screen.cart.items.reduce((sum, item) => sum + item.count * item.price, 0)"
+          }
+        },
+        {
+          "id": "show_removal_toast",
+          "type": "toast",
+          "params": {
+            "message": "Item removed from cart",
+            "type": "info",
+            "duration": 3000
+          }
+        }
+      ],
+      "enabled": true
+    }
+  ]
+}

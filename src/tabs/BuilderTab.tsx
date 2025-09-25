@@ -11,7 +11,7 @@ import { widgetDefinitions, createDefaultWidget } from '../lib/widgetDefaults';
 import { convertWidgetsToScreenJson, convertScreenJsonToWidgets } from '../lib/jsonConverter';
 import { Toolbar } from '../components/builder/Toolbar';
 import { Canvas } from '../components/builder/Canvas';
-import { PropertiesPanel } from '../components/builder/PropertiesPanel';
+import { EnhancedPropertiesPanel } from '../components/builder/EnhancedPropertiesPanel';
 import { ComponentsTree } from '../components/builder/ComponentsTree';
 
 export function BuilderTab() {
@@ -312,7 +312,7 @@ export function BuilderTab() {
         </div>
 
         {/* Properties panel */}
-        {viewMode === 'design' && <PropertiesPanel />}
+        {viewMode === 'design' && <EnhancedPropertiesPanel />}
       </div>
     </div>
   );

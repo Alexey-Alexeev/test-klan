@@ -333,8 +333,8 @@ export interface HistoryState {
 
 // App state
 export interface AppState {
-  activeTab: 'builder' | 'widgets' | 'templates';
-  viewMode: 'design' | 'json';
+  activeTab: 'builder' | 'widgets' | 'templates' | 'logic';
+  viewMode: 'design' | 'json' | 'preview';
   isPropertiesPanelOpen: boolean;
   sidebarCollapsed: boolean;
 }
@@ -345,6 +345,9 @@ export interface RootState {
   templates: TemplatesState;
   app: AppState;
   history: HistoryState;
+  widgets: import('../features/widgets/widgetsSlice').WidgetsState;
+  state: import('../features/state/stateSlice').StateManagementState;
+  events: import('../features/events/eventsSlice').EventsState;
 }
 
 // Widget component props for rendering
@@ -373,4 +376,274 @@ export interface WidgetDefinition {
   defaultProps: any;
   defaultStyle: IWidgetStyle;
   defaultSize: ISize;
+}
+
+// BDUI Dynamic Types - Phase 1: State, Actions, Events, Widgets Registry
+
+// Expression types
+export type ExpressionValue = string | number | boolean | null | undefined;
+export type VariableScope = 'local' | 'params' | 'screen' | 'app';
+
+// State definition
+export interface StateVariable {
+  id: string;
+  key: string;
+  type: 'string' | 'number' | 'boolean' | 'array' | 'object';
+  value: any;
+  scope: VariableScope;
+  description?: string;
+}
+
+// Action types and definitions
+export type ActionType = 
+  | 'navigation' 
+  | 'state_update' 
+  | 'recalculate' 
+  | 'api_call' 
+  | 'emit_event' 
+  | 'condition' 
+  | 'toast' 
+  | 'open_widget' 
+  | 'close_widget' 
+  | 'stop_propagation' 
+  | 'batch';
+
+export interface BaseAction {
+  id: string;
+  type: ActionType;
+  meta?: {
+    name?: string;
+    description?: string;
+    enabled?: boolean;
+  };
+}
+
+export interface NavigationAction extends BaseAction {
+  type: 'navigation';
+  params: {
+    action: 'navigate_to' | 'navigate_back' | 'open_modal';
+    target?: string;
+    modalId?: string;
+  };
+}
+
+export interface StateUpdateAction extends BaseAction {
+  type: 'state_update';
+  params: {
+    target: string; // path to state variable
+    operation: 'set' | 'increment' | 'decrement' | 'push' | 'remove_by_index' | 'update_by_path';
+    value?: any;
+    by?: number;
+    expression?: string;
+  };
+}
+
+export interface RecalculateAction extends BaseAction {
+  type: 'recalculate';
+  params: {
+    target: string;
+    formula: string;
+  };
+}
+
+export interface ApiCallAction extends BaseAction {
+  type: 'api_call';
+  params: {
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+    url: string;
+    headers?: Record<string, string>;
+    body?: any;
+    onSuccess?: BDUIAction[];
+    onError?: BDUIAction[];
+    mapResponse?: string; // expression to map response to state
+  };
+}
+
+export interface EmitEventAction extends BaseAction {
+  type: 'emit_event';
+  params: {
+    name: string;
+    payload?: any;
+  };
+}
+
+export interface ConditionAction extends BaseAction {
+  type: 'condition';
+  params: {
+    condition: string; // expression
+    ifTrue: BDUIAction[];
+    ifFalse?: BDUIAction[];
+  };
+}
+
+export interface ToastAction extends BaseAction {
+  type: 'toast';
+  params: {
+    message: string;
+    type?: 'success' | 'error' | 'warning' | 'info';
+    duration?: number;
+  };
+}
+
+export interface WidgetControlAction extends BaseAction {
+  type: 'open_widget' | 'close_widget';
+  params: {
+    widgetInstanceId: string;
+  };
+}
+
+export interface StopPropagationAction extends BaseAction {
+  type: 'stop_propagation';
+  params: {};
+}
+
+export interface BatchAction extends BaseAction {
+  type: 'batch';
+  params: {
+    actions: BDUIAction[];
+    atomic?: boolean; // if true, rollback on any failure
+  };
+}
+
+export type BDUIAction = 
+  | NavigationAction 
+  | StateUpdateAction 
+  | RecalculateAction 
+  | ApiCallAction 
+  | EmitEventAction 
+  | ConditionAction 
+  | ToastAction 
+  | WidgetControlAction 
+  | StopPropagationAction 
+  | BatchAction;
+
+// Event definitions
+export type EventTrigger = 
+  | 'on_click' 
+  | 'on_longpress' 
+  | 'on_change' 
+  | 'on_load' 
+  | 'on_init' 
+  | 'on_api_success' 
+  | 'on_api_error'
+  | 'custom_event';
+
+export interface EventDefinition {
+  id: string;
+  trigger: {
+    on: EventTrigger;
+    name?: string; // for custom events
+    elementId?: string; // specific element that triggers this event
+  };
+  conditions?: string[]; // array of condition expressions
+  actions: BDUIAction[];
+  enabled?: boolean;
+}
+
+// Widget definition (extended)
+export interface BDUIWidgetDefinition {
+  widgetId: string;
+  version: string;
+  meta: {
+    name: string;
+    description?: string;
+    author?: string;
+    tags?: string[];
+  };
+  params: Record<string, {
+    type: string;
+    default?: any;
+    required?: boolean;
+    description?: string;
+  }>;
+  localState: Record<string, StateVariable>;
+  publicApi?: {
+    events?: string[];
+    methods?: Record<string, {
+      params?: any[];
+      returns?: string;
+    }>;
+  };
+  content: any; // existing layout JSON
+  events: EventDefinition[];
+}
+
+// Widget instance
+export interface WidgetInstance {
+  id: string;
+  widgetId: string;
+  position: IPosition;
+  size: ISize;
+  paramBindings: Record<string, any>; // param name -> value or expression
+  localStateSnapshot?: Record<string, any>;
+  zIndex: number;
+}
+
+// Enhanced screen structure
+export interface BDUIScreen {
+  id: string;
+  meta: {
+    name: string;
+    description?: string;
+    version?: string;
+  };
+  state: Record<string, StateVariable>;
+  content: any; // existing layout JSON
+  events: EventDefinition[];
+  widgetInstances: WidgetInstance[];
+}
+
+// App-level structure
+export interface BDUIApp {
+  meta: {
+    name: string;
+    version: string;
+    description?: string;
+  };
+  state: Record<string, StateVariable>; // global state
+  screens: Record<string, BDUIScreen>;
+  widgetsRegistry: Record<string, BDUIWidgetDefinition>;
+  apiConfig?: {
+    baseUrl?: string;
+    allowedDomains?: string[];
+    defaultHeaders?: Record<string, string>;
+  };
+}
+
+// Runtime state management
+export interface RuntimeState {
+  app: Record<string, any>;
+  screen: Record<string, any>;
+  widgets: Record<string, Record<string, any>>; // widgetInstanceId -> local state
+}
+
+// Expression evaluation context
+export interface ExpressionContext {
+  app: Record<string, any>;
+  screen: Record<string, any>;
+  local?: Record<string, any>;
+  params?: Record<string, any>;
+}
+
+// Event system
+export interface EventPayload {
+  eventId: string;
+  trigger: EventTrigger;
+  elementId?: string;
+  data?: any;
+  timestamp: number;
+}
+
+// Enhanced widget types with actions and bindings
+export interface IWidgetActions {
+  actions?: BDUIAction[];
+  bindings?: Record<string, string>; // property -> expression
+}
+
+// Update existing widget interfaces to include actions
+declare module './index' {
+  interface IWidgetBase {
+    actions?: BDUIAction[];
+    bindings?: Record<string, string>;
+  }
 }

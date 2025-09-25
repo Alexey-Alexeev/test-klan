@@ -1,0 +1,318 @@
+{
+  "type": "screen",
+  "baseParams": {},
+  "typeParams": {
+    "state": [
+      {
+        "key": "title",
+        "type": "string",
+        "value": "Shopping Cart"
+      }
+    ],
+    "content": {
+      "type": "screen",
+      "header": {
+        "type": "row",
+        "alignment": "center",
+        "padding": 16,
+        "gap": 8,
+        "content": [
+          {
+            "type": "icon",
+            "src": { "type": "res", "value": "arrow_left" },
+            "actions": [{ "type": "navigation_back" }]
+          },
+          {
+            "type": "text",
+            "text": "{title}",
+            "style": {
+              "fontSize": 18,
+              "fontWeight": "600"
+            }
+          }
+        ]
+      },
+      "content": {
+        "type": "column_scroll",
+        "gap": 16,
+        "padding": 16,
+        "content": [
+          {
+            "type": "widget_instance",
+            "widgetId": "CartItem_v1",
+            "instanceId": "cart_item_1",
+            "paramBindings": {
+              "productId": "apple_watch",
+              "title": "Apple Watch Series 9",
+              "price": 399,
+              "imageUrl": "https://via.placeholder.com/60x60"
+            }
+          },
+          {
+            "type": "widget_instance",
+            "widgetId": "CartItem_v1",
+            "instanceId": "cart_item_2",
+            "paramBindings": {
+              "productId": "airpods_pro",
+              "title": "AirPods Pro 2nd Gen",
+              "price": 249,
+              "imageUrl": "https://via.placeholder.com/60x60"
+            }
+          },
+          {
+            "type": "divider",
+            "style": {
+              "margin": "20px 0"
+            }
+          },
+          {
+            "type": "container",
+            "direction": "row",
+            "alignment": "space-between",
+            "padding": 16,
+            "style": {
+              "backgroundColor": "#f9fafb",
+              "borderRadius": 8
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "Total:",
+                "style": {
+                  "fontSize": 18,
+                  "fontWeight": "600"
+                }
+              },
+              {
+                "type": "text",
+                "text": "${screen.cart.total}",
+                "style": {
+                  "fontSize": 18,
+                  "fontWeight": "700",
+                  "color": "#059669"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "footer": {
+        "type": "container",
+        "padding": 16,
+        "content": [
+          {
+            "type": "button",
+            "text": "Proceed to Checkout",
+            "variant": "primary",
+            "style": {
+              "width": "100%",
+              "height": "48px",
+              "fontSize": 16,
+              "fontWeight": "600"
+            },
+            "actions": [
+              {
+                "id": "proceed_to_checkout",
+                "type": "condition",
+                "params": {
+                  "condition": "screen.cart.total > 0",
+                  "ifTrue": [
+                    {
+                      "id": "navigate_to_checkout",
+                      "type": "navigation",
+                      "params": {
+                        "action": "navigate_to",
+                        "target": "checkout_screen"
+                      }
+                    }
+                  ],
+                  "ifFalse": [
+                    {
+                      "id": "show_empty_cart_toast",
+                      "type": "toast",
+                      "params": {
+                        "message": "Your cart is empty",
+                        "type": "warning",
+                        "duration": 3000
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "canvasSize": {
+    "width": 375,
+    "height": 812,
+    "device": "iphone-14"
+  },
+  "bdui": {
+    "state": {
+      "cart": {
+        "id": "cart_state",
+        "key": "cart",
+        "type": "object",
+        "value": {
+          "items": [
+            {
+              "productId": "apple_watch",
+              "title": "Apple Watch Series 9",
+              "price": 399,
+              "count": 1
+            },
+            {
+              "productId": "airpods_pro",
+              "title": "AirPods Pro 2nd Gen",
+              "price": 249,
+              "count": 1
+            }
+          ],
+          "total": 648
+        },
+        "scope": "screen",
+        "description": "Shopping cart data"
+      }
+    },
+    "events": [
+      {
+        "id": "cart_screen_load",
+        "trigger": {
+          "on": "on_load"
+        },
+        "actions": [
+          {
+            "id": "recalculate_cart_total",
+            "type": "recalculate",
+            "params": {
+              "target": "screen.cart.total",
+              "formula": "screen.cart.items.reduce((sum, item) => sum + item.count * item.price, 0)"
+            }
+          },
+          {
+            "id": "show_welcome_toast",
+            "type": "toast",
+            "params": {
+              "message": "Cart loaded successfully",
+              "type": "success",
+              "duration": 2000
+            }
+          }
+        ],
+        "enabled": true
+      },
+      {
+        "id": "handle_item_count_changed",
+        "trigger": {
+          "on": "custom_event",
+          "name": "item_count_changed"
+        },
+        "actions": [
+          {
+            "id": "update_cart_item",
+            "type": "state_update",
+            "params": {
+              "target": "screen.cart.items",
+              "operation": "update_by_path",
+              "expression": "screen.cart.items.map(item => item.productId === event.payload.productId ? { ...item, count: event.payload.count } : item)"
+            }
+          },
+          {
+            "id": "recalculate_total",
+            "type": "recalculate",
+            "params": {
+              "target": "screen.cart.total",
+              "formula": "screen.cart.items.reduce((sum, item) => sum + item.count * item.price, 0)"
+            }
+          }
+        ],
+        "enabled": true
+      },
+      {
+        "id": "handle_item_removed",
+        "trigger": {
+          "on": "custom_event",
+          "name": "item_removed"
+        },
+        "actions": [
+          {
+            "id": "remove_item_from_cart",
+            "type": "state_update",
+            "params": {
+              "target": "screen.cart.items",
+              "operation": "update_by_path",
+              "expression": "screen.cart.items.filter(item => item.productId !== event.payload.productId)"
+            }
+          },
+          {
+            "id": "recalculate_total_after_removal",
+            "type": "recalculate",
+            "params": {
+              "target": "screen.cart.total",
+              "formula": "screen.cart.items.reduce((sum, item) => sum + item.count * item.price, 0)"
+            }
+          }
+        ],
+        "enabled": true
+      }
+    ],
+    "widgetInstances": [
+      {
+        "id": "cart_item_1",
+        "widgetId": "CartItem_v1",
+        "position": { "x": 16, "y": 100 },
+        "size": { "width": 343, "height": 80 },
+        "paramBindings": {
+          "productId": "apple_watch",
+          "title": "Apple Watch Series 9",
+          "price": 399,
+          "imageUrl": "https://via.placeholder.com/60x60"
+        },
+        "zIndex": 1
+      },
+      {
+        "id": "cart_item_2",
+        "widgetId": "CartItem_v1",
+        "position": { "x": 16, "y": 196 },
+        "size": { "width": 343, "height": 80 },
+        "paramBindings": {
+          "productId": "airpods_pro",
+          "title": "AirPods Pro 2nd Gen",
+          "price": 249,
+          "imageUrl": "https://via.placeholder.com/60x60"
+        },
+        "zIndex": 1
+      }
+    ],
+    "widgetsRegistry": {
+      "CartItem_v1": {
+        "widgetId": "CartItem_v1",
+        "version": "1.0.0",
+        "meta": {
+          "name": "Cart Item",
+          "description": "A reusable cart item component with quantity controls"
+        },
+        "params": {
+          "productId": { "type": "string", "required": true },
+          "title": { "type": "string", "required": true },
+          "price": { "type": "number", "required": true },
+          "imageUrl": { "type": "string" }
+        },
+        "localState": {
+          "count": {
+            "id": "count_state",
+            "key": "count",
+            "type": "number",
+            "value": 1,
+            "scope": "local"
+          }
+        },
+        "content": {},
+        "events": []
+      }
+    }
+  }
+}

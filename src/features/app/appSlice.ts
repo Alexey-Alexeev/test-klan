@@ -12,11 +12,11 @@ const appSlice = createSlice({
   name: 'app',
   initialState,
   reducers: {
-    setActiveTab: (state, action: PayloadAction<'builder' | 'widgets' | 'templates'>) => {
+    setActiveTab: (state, action: PayloadAction<'builder' | 'widgets' | 'templates' | 'logic'>) => {
       state.activeTab = action.payload;
     },
 
-    setViewMode: (state, action: PayloadAction<'design' | 'json'>) => {
+    setViewMode: (state, action: PayloadAction<'design' | 'json' | 'preview'>) => {
       state.viewMode = action.payload;
     },
 

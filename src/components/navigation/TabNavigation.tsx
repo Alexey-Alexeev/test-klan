@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Monitor, Layers, Bookmark } from 'lucide-react';
+import { Monitor, Layers, Bookmark, Zap } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { setActiveTab } from '../../features/app/appSlice';
 
@@ -13,13 +13,19 @@ const tabs = [
   },
   {
     id: 'widgets' as const,
-    name: 'Компоненты',
+    name: 'Виджеты',
     icon: Layers,
-    description: 'Библиотека элементов интерфейса',
+    description: 'Библиотека компонентов',
+  },
+  {
+    id: 'logic' as const,
+    name: 'Логика',
+    icon: Zap,
+    description: 'События и потоки логики',
   },
   {
     id: 'templates' as const,
-    name: 'Макеты',
+    name: 'Шаблоны',
     icon: Bookmark,
     description: 'Сохраненные шаблоны',
   },
@@ -72,8 +78,9 @@ export function TabNavigation() {
         <div className="ml-auto flex items-center gap-4">
           <div className="text-sm text-muted-foreground">
             {activeTab === 'builder' && 'Перетащите элементы на холст'}
-            {activeTab === 'widgets' && 'Выберите компонент для добавления'}
-            {activeTab === 'templates' && 'Управление сохраненными макетами'}
+            {activeTab === 'widgets' && 'Выберите компоненты для добавления или создайте пользовательские виджеты'}
+            {activeTab === 'logic' && 'Создавайте события и потоки логики'}
+            {activeTab === 'templates' && 'Управляйте сохраненными шаблонами'}
           </div>
         </div>
       </div>

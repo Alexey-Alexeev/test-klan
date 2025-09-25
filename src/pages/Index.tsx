@@ -3,6 +3,7 @@ import { TabNavigation } from '../components/navigation/TabNavigation';
 import { BuilderTab } from '../tabs/BuilderTab';
 import { WidgetsTab } from '../tabs/WidgetsTab';
 import { TemplatesTab } from '../tabs/TemplatesTab';
+import { LogicTab } from '../tabs/LogicTab';
 
 const Index = () => {
   const { activeTab } = useAppSelector(state => state.app);
@@ -15,6 +16,8 @@ const Index = () => {
         return <WidgetsTab />;
       case 'templates':
         return <TemplatesTab />;
+      case 'logic':
+        return <LogicTab />;
       default:
         return <BuilderTab />;
     }
