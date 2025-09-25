@@ -337,6 +337,7 @@ export interface AppState {
   viewMode: 'design' | 'json';
   isPropertiesPanelOpen: boolean;
   sidebarCollapsed: boolean;
+  zoomLevel: number;
 }
 
 // Root state

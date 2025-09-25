@@ -5,7 +5,7 @@ import { WidgetsTab } from '../tabs/WidgetsTab';
 import { TemplatesTab } from '../tabs/TemplatesTab';
 
 const Index = () => {
-  const { activeTab } = useAppSelector(state => state.app);
+  const { activeTab, zoomLevel } = useAppSelector(state => state.app);
 
   const renderActiveTab = () => {
     switch (activeTab) {
@@ -21,7 +21,16 @@ const Index = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div 
+      className="flex flex-col bg-background text-base"
+      style={{
+        transform: `scale(${zoomLevel / 100})`,
+        transformOrigin: 'top left',
+        width: `${100 / (zoomLevel / 100)}%`,
+        height: `${100 / (zoomLevel / 100)}%`,
+        minHeight: '100vh',
+      }}
+    >
       <TabNavigation />
       
       <main className="flex-1 overflow-hidden">

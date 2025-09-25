@@ -6,6 +6,7 @@ const initialState: AppState = {
   viewMode: 'design',
   isPropertiesPanelOpen: true,
   sidebarCollapsed: false,
+  zoomLevel: 100,
 };
 
 const appSlice = createSlice({
@@ -35,6 +36,25 @@ const appSlice = createSlice({
     setSidebarCollapsed: (state, action: PayloadAction<boolean>) => {
       state.sidebarCollapsed = action.payload;
     },
+
+    // Zoom actions
+    setZoomLevel: (state, action: PayloadAction<number>) => {
+      state.zoomLevel = Math.max(25, Math.min(300, action.payload)); // Ограничиваем зум от 25% до 300%
+    },
+
+    zoomIn: (state) => {
+      const newZoom = Math.min(300, state.zoomLevel + 10);
+      state.zoomLevel = newZoom;
+    },
+
+    zoomOut: (state) => {
+      const newZoom = Math.max(25, state.zoomLevel - 10);
+      state.zoomLevel = newZoom;
+    },
+
+    resetZoom: (state) => {
+      state.zoomLevel = 100;
+    },
   },
 });
 
@@ -44,6 +64,10 @@ export const {
   togglePropertiesPanel,
   setPropertiesPanelOpen,
   setSidebarCollapsed,
+  setZoomLevel,
+  zoomIn,
+  zoomOut,
+  resetZoom,
 } = appSlice.actions;
 
 export default appSlice.reducer;

@@ -1,11 +1,11 @@
 import React from 'react';
 import { IWidget, IPosition, ISize } from '../../types';
+import { useAppSelector } from '../../store/hooks';
 
 interface GuidesProps {
   widgets: IWidget[];
   selectedWidgetId: string | null;
   canvasSize: { width: number; height: number };
-  zoom: number;
   panOffset: IPosition;
 }
 
@@ -17,7 +17,9 @@ interface GuideLine {
   label?: string;
 }
 
-export function Guides({ widgets, selectedWidgetId, canvasSize, zoom, panOffset }: GuidesProps) {
+export function Guides({ widgets, selectedWidgetId, canvasSize, panOffset }: GuidesProps) {
+  const { zoomLevel } = useAppSelector(state => state.app);
+  const zoom = zoomLevel / 100; // Convert percentage to decimal
   const selectedWidget = widgets.find(w => w.id === selectedWidgetId);
   
   if (!selectedWidget) return null;

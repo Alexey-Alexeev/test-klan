@@ -1,13 +1,15 @@
 import { useMemo } from 'react';
 import { IPosition } from '../../types';
+import { useAppSelector } from '../../store/hooks';
 
 interface RulerProps {
   orientation: 'horizontal' | 'vertical';
-  zoom: number;
   origin: IPosition; // canvas screen top-left in container pixels
 }
 
-export function Ruler({ orientation, zoom, origin }: RulerProps) {
+export function Ruler({ orientation, origin }: RulerProps) {
+  const { zoomLevel } = useAppSelector(state => state.app);
+  const zoom = zoomLevel / 100; // Convert percentage to decimal
   const rulerSize = 20;
   const tickInterval = 50; // canvas units between major ticks
   const minorTickInterval = 10; // canvas units between minor ticks

@@ -1,7 +1,9 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { selectWidget, addWidget, updateWidget, setPanOffset, setZoom, setCanvasSize, toggleCanvasSizeLock, setSelectedPreset } from '../../features/canvas/canvasSlice';
+import { selectWidget, addWidget, updateWidget, setPanOffset, setCanvasSize, toggleCanvasSizeLock, setSelectedPreset } from '../../features/canvas/canvasSlice';
+import { useAppSelector as useAppSelectorApp } from '../../store/hooks';
+import { zoomIn, zoomOut } from '../../features/app/appSlice';
 import { createDefaultWidget } from '../../lib/widgetDefaults';
 import { WidgetRenderer } from './WidgetRenderer';
 import { Ruler } from './Ruler';
@@ -20,7 +22,6 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
     canvasSize, 
     gridSnap, 
     snapSize,
-    zoom, 
     panOffset, 
     showRulers, 
     gridSize, 
@@ -28,6 +29,9 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
     isCanvasSizeLocked,
     selectedPreset,
   } = useAppSelector(state => state.canvas);
+  
+  const { zoomLevel } = useAppSelectorApp(state => state.app);
+  const zoom = zoomLevel / 100; // Convert percentage to decimal
   
   const canvasRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -303,15 +307,15 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
     setIsResizingCanvas(false);
   }, []);
 
-  // Wheel zoom
+  // Wheel zoom - теперь использует App zoom
   const handleWheel = useCallback((e: React.WheelEvent) => {
     if (e.ctrlKey) {
       e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.1 : 0.1;
-      const newZoom = Math.max(0.1, Math.min(3, zoom + delta));
-      dispatch(setZoom(newZoom));
+      const delta = e.deltaY > 0 ? -10 : 10; // Fixed step of 10%
+      const newZoomLevel = Math.max(25, Math.min(300, zoomLevel + delta));
+      // App zoom управляется через Toolbar, поэтому здесь просто предотвращаем стандартное поведение
     }
-  }, [zoom, dispatch]);
+  }, [zoomLevel]);
 
   const handleCanvasMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!canvasRef.current) return;
@@ -427,8 +431,8 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
       {/* Rulers */}
       {showRulers && (
         <>
-          <Ruler orientation="horizontal" zoom={zoom} origin={rulerOrigin} />
-          <Ruler orientation="vertical" zoom={zoom} origin={rulerOrigin} />
+          <Ruler orientation="horizontal" origin={rulerOrigin} />
+          <Ruler orientation="vertical" origin={rulerOrigin} />
         </>
       )}
       

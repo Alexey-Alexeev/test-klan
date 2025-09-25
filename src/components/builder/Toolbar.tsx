@@ -20,14 +20,13 @@ import {
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { 
   toggleGridSnap, 
-  setZoom, 
   clearCanvas, 
   toggleRulers, 
   toggleGrid, 
   resetView 
 } from '../../features/canvas/canvasSlice';
 import { undo, redo } from '../../features/history/historySlice';
-import { setViewMode, togglePropertiesPanel } from '../../features/app/appSlice';
+import { setViewMode, togglePropertiesPanel, zoomIn, zoomOut, resetZoom } from '../../features/app/appSlice';
 import { addTemplate } from '../../features/templates/templatesSlice';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -37,19 +36,19 @@ import { useState, useEffect } from 'react';
 
 export function Toolbar() {
   const dispatch = useAppDispatch();
-  const { gridSnap, zoom, widgets, showRulers, showGrid } = useAppSelector(state => state.canvas);
-  const { viewMode } = useAppSelector(state => state.app);
+  const { gridSnap, widgets, showRulers, showGrid } = useAppSelector(state => state.canvas);
+  const { viewMode, zoomLevel } = useAppSelector(state => state.app);
   const { past, future } = useAppSelector(state => state.history);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
 
   const handleZoomIn = () => {
-    dispatch(setZoom(zoom + 0.1));
+    dispatch(zoomIn());
   };
 
   const handleZoomOut = () => {
-    dispatch(setZoom(zoom - 0.1));
+    dispatch(zoomOut());
   };
 
   const handleToggleGrid = () => {
@@ -149,7 +148,7 @@ export function Toolbar() {
         switch (e.key) {
           case '0':
             e.preventDefault();
-            dispatch(resetView());
+            dispatch(resetZoom());
             break;
           case '=':
           case '+':
@@ -186,7 +185,7 @@ export function Toolbar() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [zoom]);
+  }, [zoomLevel]);
 
   return (
     <div className="flex items-center gap-2 p-3 bg-white border-b border-border shadow-sm">
@@ -277,21 +276,21 @@ export function Toolbar() {
           variant="outline"
           size="sm"
           onClick={handleZoomOut}
-          disabled={zoom <= 0.25}
+          disabled={zoomLevel <= 25}
           className="h-8 w-8 p-0"
         >
           <ZoomOut className="h-4 w-4" />
         </Button>
         
         <span className="text-sm font-medium min-w-[50px] text-center">
-          {Math.round(zoom * 100)}%
+          {zoomLevel}%
         </span>
         
         <Button
           variant="outline"
           size="sm"
           onClick={handleZoomIn}
-          disabled={zoom >= 2}
+          disabled={zoomLevel >= 300}
           className="h-8 w-8 p-0"
         >
           <ZoomIn className="h-4 w-4" />
@@ -301,9 +300,9 @@ export function Toolbar() {
       <Button
         variant="outline"
         size="sm"
-        onClick={() => dispatch(resetView())}
+        onClick={() => dispatch(resetZoom())}
         className="h-8"
-        title="Сбросить вид (Ctrl+0)"
+        title="Сбросить зум (Ctrl+0)"
       >
         <RotateCcw className="h-4 w-4 mr-2" />
         Сброс
