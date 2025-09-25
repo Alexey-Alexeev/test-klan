@@ -244,18 +244,18 @@ const TreeNode: React.FC<TreeNodeProps & { allWidgets: IWidget[] }> = ({
                 setEditValue('');
               }
             }}
-            className="flex-1 text-sm bg-transparent border-none outline-none px-1 py-0"
+            className="flex-1 text-sm bg-transparent border-none outline-none px-1 py-0 min-w-0"
             autoFocus
           />
         ) : (
-          <span className={`flex-1 text-sm ${isRootNode ? 'font-medium' : ''}`}>
+          <span className={`flex-1 text-sm ${isRootNode ? 'font-medium' : ''} truncate min-w-0`}>
             {getWidgetName(widget, allWidgets)}
           </span>
         )}
 
         {/* Actions */}
         {!isRootNode && (
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 flex-shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -535,12 +535,12 @@ const handleMoveToRoot = (widgetId: string) => {
   };
 
   return (
-    <Card className="h-full w-full min-h-[350px]">
-      <CardHeader className="pb-3">
+    <Card className="h-full w-full min-h-[350px] max-h-full flex flex-col">
+      <CardHeader className="pb-3 flex-shrink-0">
         <CardTitle className="text-lg">Дерево компонентов</CardTitle>
       </CardHeader>
-      <CardContent className="p-0 flex-1 overflow-y-auto">
-        <div className="space-y-1 min-w-0">
+      <CardContent className="p-0 flex-1 overflow-y-auto min-h-0">
+        <div className="space-y-1 min-w-0 p-2">
           {/* Tree nodes */}
           {renderTree(null)}
         </div>
