@@ -312,6 +312,7 @@ export interface CanvasState {
   isMultiSelecting: boolean;
   selectionBox: { x: number; y: number; width: number; height: number } | null;
   viewportCenter?: IPosition;
+  selectedPreset: string;
 }
 
 // Templates state

@@ -60,6 +60,11 @@ export interface ScreenJson {
   type: 'screen';
   baseParams: Record<string, any>;
   typeParams: ScreenTypeParams;
+  canvasSize?: {
+    width: number;
+    height: number;
+    device?: string;
+  };
 }
 
 // Функция для преобразования виджета в ContentElement
@@ -181,10 +186,10 @@ function getWidgetById(id: string, widgets: IWidget[]): IWidget | undefined {
 }
 
 // Основная функция для преобразования виджетов в новую JSON структуру
-export function convertWidgetsToScreenJson(widgets: IWidget[]): ScreenJson {
+export function convertWidgetsToScreenJson(widgets: IWidget[], canvasSize?: { width: number; height: number }, selectedPreset?: string): ScreenJson {
   // Проверяем, что массив виджетов не пустой
   if (!widgets || widgets.length === 0) {
-    return {
+    const emptyScreenJson = {
       type: 'screen',
       baseParams: {},
       typeParams: {
@@ -228,6 +233,21 @@ export function convertWidgetsToScreenJson(widgets: IWidget[]): ScreenJson {
         }
       }
     };
+
+    // Добавляем информацию о размере canvas, если она предоставлена
+    console.log('convertWidgetsToScreenJson (empty widgets) - canvasSize:', canvasSize, 'selectedPreset:', selectedPreset);
+    if (canvasSize) {
+      emptyScreenJson.canvasSize = {
+        width: canvasSize.width,
+        height: canvasSize.height,
+        device: selectedPreset || 'custom'
+      };
+      console.log('Added canvasSize to empty screen JSON:', emptyScreenJson.canvasSize);
+    } else {
+      console.log('canvasSize is falsy, not adding to empty screen JSON');
+    }
+
+    return emptyScreenJson;
   }
   
   // Находим корневые виджеты (без parentId)
@@ -288,17 +308,30 @@ export function convertWidgetsToScreenJson(widgets: IWidget[]): ScreenJson {
     }
   };
 
+  // Добавляем информацию о размере canvas, если она предоставлена
+  console.log('convertWidgetsToScreenJson - canvasSize:', canvasSize, 'selectedPreset:', selectedPreset);
+  if (canvasSize) {
+    screenJson.canvasSize = {
+      width: canvasSize.width,
+      height: canvasSize.height,
+      device: selectedPreset || 'custom'
+    };
+    console.log('Added canvasSize to JSON:', screenJson.canvasSize);
+  } else {
+    console.log('canvasSize is falsy, not adding to JSON');
+  }
+
   return screenJson;
 }
 
 // Функция для преобразования новой JSON структуры обратно в виджеты
-export function convertScreenJsonToWidgets(screenJson: ScreenJson): IWidget[] {
+export function convertScreenJsonToWidgets(screenJson: ScreenJson): { widgets: IWidget[]; canvasSize?: { width: number; height: number }; selectedPreset?: string } {
   const widgets: IWidget[] = [];
   
   // Проверяем валидность входных данных
   if (!screenJson || !screenJson.typeParams || !screenJson.typeParams.content) {
     console.warn('Неверная структура JSON экрана');
-    return [];
+    return { widgets: [] };
   }
   
   // Рекурсивная функция для преобразования ContentElement в виджет
@@ -394,5 +427,13 @@ export function convertScreenJsonToWidgets(screenJson: ScreenJson): IWidget[] {
     widgets.push(widget);
   }
 
-  return widgets;
+  // Возвращаем виджеты и информацию о canvas
+  return {
+    widgets,
+    canvasSize: screenJson.canvasSize ? {
+      width: screenJson.canvasSize.width,
+      height: screenJson.canvasSize.height
+    } : undefined,
+    selectedPreset: screenJson.canvasSize?.device
+  };
 }

@@ -17,6 +17,7 @@ const initialState: CanvasState = {
   showGrid: true,
   isMultiSelecting: false,
   selectionBox: null,
+  selectedPreset: 'custom',
 };
 
 const canvasSlice = createSlice({
@@ -272,6 +273,11 @@ const canvasSlice = createSlice({
       state.selectionBox = action.payload;
     },
 
+    setSelectedPreset: (state, action: PayloadAction<string>) => {
+      console.log('setSelectedPreset called with:', action.payload);
+      state.selectedPreset = action.payload;
+      console.log('selectedPreset updated to:', state.selectedPreset);
+    },
 
   },
 });
@@ -304,6 +310,7 @@ export const {
   clearSelection,
   setMultiSelecting,
   setSelectionBox,
+  setSelectedPreset,
 } = canvasSlice.actions;
 
 export default canvasSlice.reducer;

@@ -1,7 +1,7 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { selectWidget, addWidget, updateWidget, setPanOffset, setZoom, setCanvasSize, toggleCanvasSizeLock } from '../../features/canvas/canvasSlice';
+import { selectWidget, addWidget, updateWidget, setPanOffset, setZoom, setCanvasSize, toggleCanvasSizeLock, setSelectedPreset } from '../../features/canvas/canvasSlice';
 import { createDefaultWidget } from '../../lib/widgetDefaults';
 import { WidgetRenderer } from './WidgetRenderer';
 import { Ruler } from './Ruler';
@@ -26,6 +26,7 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
     gridSize, 
     showGrid,
     isCanvasSizeLocked,
+    selectedPreset,
   } = useAppSelector(state => state.canvas);
   
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -40,7 +41,6 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
   const [sizeDraft, setSizeDraft] = useState<{ width: string; height: string }>({ width: '', height: '' });
   const [hoveredZone, setHoveredZone] = useState<'header' | 'main' | 'footer' | null>(null);
   const [isDraggingWidget, setIsDraggingWidget] = useState(false);
-  const [selectedPreset, setSelectedPreset] = useState<string>('custom');
 
   useEffect(() => {
     setSizeDraft({ width: String(Math.round(canvasSize.width)), height: String(Math.round(canvasSize.height)) });
@@ -53,11 +53,11 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
     );
     
     if (matchingPreset) {
-      setSelectedPreset(matchingPreset.id);
+      dispatch(setSelectedPreset(matchingPreset.id));
       // Don't auto-lock on initial load - only when user manually selects a device
       // This allows the canvas to start unlocked even if it matches a device size
     } else {
-      setSelectedPreset('custom');
+      dispatch(setSelectedPreset('custom'));
     }
   }, [canvasSize.width, canvasSize.height, isCanvasSizeLocked, widgets, dispatch]);
 
@@ -75,11 +75,12 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
     }
     dispatch(setCanvasSize({ width: w, height: h }));
     // Switch to custom when manually editing
-    setSelectedPreset('custom');
+    dispatch(setSelectedPreset('custom'));
   }, [dispatch, sizeDraft, isCanvasSizeLocked, canvasSize.width, canvasSize.height, gridSnap, snapSize]);
 
   const handlePresetChange = useCallback((presetId: string) => {
-    setSelectedPreset(presetId);
+    console.log('handlePresetChange called with:', presetId);
+    dispatch(setSelectedPreset(presetId));
     
     if (presetId === 'custom') {
       // Unlock canvas size for custom editing (only if not locked by containers)
@@ -90,8 +91,10 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
     }
     
     const preset = CANVAS_SIZE_PRESETS.find(p => p.id === presetId);
+    console.log('Found preset:', preset);
     if (preset && preset.width > 0 && preset.height > 0) {
       // Always allow changing to device preset, even if currently locked
+      console.log('Dispatching setCanvasSize:', { width: preset.width, height: preset.height });
       dispatch(setCanvasSize({ width: preset.width, height: preset.height }));
       setSizeDraft({ width: String(preset.width), height: String(preset.height) });
       
@@ -370,7 +373,6 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
 
   // Resize canvas handlers
   const onCanvasResizeMouseDown = useCallback((e: React.MouseEvent, direction: 'e' | 's' | 'se' = 'se') => {
-    console.log('Canvas resize mouse down:', direction, 'locked:', isCanvasSizeLocked);
     e.stopPropagation();
     if (isCanvasSizeLocked) return;
     setIsResizingCanvas(true);

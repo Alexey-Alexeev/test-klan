@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
@@ -6,7 +6,7 @@ import { Code, Copy } from 'lucide-react';
 import * as icons from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { useToast } from '../hooks/use-toast';
-import { loadWidgets, addWidget } from '../features/canvas/canvasSlice';
+import { loadWidgets, addWidget, setCanvasSize, setSelectedPreset } from '../features/canvas/canvasSlice';
 import { widgetDefinitions, createDefaultWidget } from '../lib/widgetDefaults';
 import { convertWidgetsToScreenJson, convertScreenJsonToWidgets } from '../lib/jsonConverter';
 import { Toolbar } from '../components/builder/Toolbar';
@@ -16,7 +16,7 @@ import { ComponentsTree } from '../components/builder/ComponentsTree';
 
 export function BuilderTab() {
   const dispatch = useAppDispatch();
-  const { widgets, canvasSize } = useAppSelector(state => state.canvas);
+  const { widgets, canvasSize, selectedPreset } = useAppSelector(state => state.canvas);
   const { viewMode } = useAppSelector(state => state.app);
   const { toast } = useToast();
   
@@ -31,8 +31,17 @@ export function BuilderTab() {
       // Проверяем, является ли это новой структурой экрана
       if (parsed.type === 'screen' && parsed.typeParams && parsed.typeParams.content) {
         try {
-          const convertedWidgets = convertScreenJsonToWidgets(parsed);
-          dispatch(loadWidgets(convertedWidgets));
+          const result = convertScreenJsonToWidgets(parsed);
+          dispatch(loadWidgets(result.widgets));
+          
+          // Обновляем размер canvas и выбранное устройство, если они есть в JSON
+          if (result.canvasSize) {
+            dispatch(setCanvasSize(result.canvasSize));
+          }
+          if (result.selectedPreset) {
+            dispatch(setSelectedPreset(result.selectedPreset));
+          }
+          
           setJsonError('');
         } catch (error) {
           console.error('Ошибка при конвертации JSON экрана:', error);
@@ -71,14 +80,16 @@ export function BuilderTab() {
 
   const exportJson = useCallback(() => {
     try {
+      console.log('exportJson called with:', { canvasSize, selectedPreset });
       // Преобразуем виджеты в новую структуру экрана
-      const screenJson = convertWidgetsToScreenJson(widgets);
+      const screenJson = convertWidgetsToScreenJson(widgets, canvasSize, selectedPreset);
+      console.log('Generated screenJson:', screenJson);
       return JSON.stringify(screenJson, null, 2);
     } catch (error) {
       console.error('Ошибка при экспорте JSON:', error);
       return JSON.stringify({ error: 'Ошибка при экспорте JSON' }, null, 2);
     }
-  }, [widgets]);
+  }, [widgets, canvasSize, selectedPreset]);
 
   const handleWidgetClick = (widgetType: string) => {
     // Добавляем виджет в центр текущего холста
@@ -92,10 +103,51 @@ export function BuilderTab() {
     if (widget) dispatch(addWidget(widget));
   };
 
-  // Update JSON when widgets change
+  // Вычисляем JSON с помощью useMemo для лучшей производительности
+  const computedJson = useMemo(() => {
+    console.log('Computing JSON with:', { 
+      widgetsCount: widgets.length, 
+      canvasSize, 
+      selectedPreset 
+    });
+    return exportJson();
+  }, [widgets, canvasSize, selectedPreset, exportJson]);
+
+  // Update JSON when computedJson changes
+  useLayoutEffect(() => {
+    console.log('Setting JSON value from computedJson');
+    setJsonValue(computedJson);
+  }, [computedJson]);
+
+  // Дополнительный useEffect для обработки изменений selectedPreset с задержкой
   useEffect(() => {
-    setJsonValue(exportJson());
-  }, [widgets, exportJson]);
+    const timeoutId = setTimeout(() => {
+      console.log('Delayed JSON update for selectedPreset:', selectedPreset);
+      setJsonValue(exportJson());
+    }, 100);
+    
+    return () => clearTimeout(timeoutId);
+  }, [selectedPreset, exportJson]);
+
+  // Еще один useEffect с requestAnimationFrame для гарантии обновления
+  useEffect(() => {
+    const rafId = requestAnimationFrame(() => {
+      console.log('RAF JSON update for selectedPreset:', selectedPreset);
+      setJsonValue(exportJson());
+    });
+    
+    return () => cancelAnimationFrame(rafId);
+  }, [selectedPreset, exportJson]);
+
+  // Финальный useEffect с длительной задержкой для гарантии обновления
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      console.log('Final JSON update for selectedPreset:', selectedPreset);
+      setJsonValue(exportJson());
+    }, 500);
+    
+    return () => clearTimeout(timeoutId);
+  }, [selectedPreset, exportJson]);
 
   return (
     <div className="flex-1 flex flex-col h-full">
