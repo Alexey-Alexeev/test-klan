@@ -280,7 +280,9 @@ export function BuilderTab() {
                   <div>
                     <strong>variant (для кнопок):</strong>
                     <div className="mt-1 text-muted-foreground">
-                      <code>"primary"</code>, <code>"secondary"</code>, <code>"outline"</code>, <code>"ghost"</code>
+                      <code>"primary"</code>, <code>"secondary"</code>, <code>"accent"</code>, <code>"pay"</code>,<br/>
+                      <code>"success"</code>, <code>"danger"</code>, <code>"secondaryDefault"</code>,<br/>
+                      <code>"secondaryAccent"</code>, <code>"secondaryPay"</code>, <code>"ghost"</code>
                     </div>
                   </div>
                   <div>
@@ -294,6 +296,13 @@ export function BuilderTab() {
                     <div className="mt-1 text-muted-foreground">
                       <code>backgroundColor</code>, <code>color</code>, <code>fontSize</code>, <code>fontWeight</code>,<br/>
                       <code>padding</code>, <code>margin</code>, <code>borderRadius</code>, <code>border</code>
+                    </div>
+                  </div>
+                  <div>
+                    <strong>canvasSize (размер холста):</strong>
+                    <div className="mt-1 text-muted-foreground">
+                      <code>width</code> (ширина), <code>height</code> (высота), <code>device</code> (устройство)<br/>
+                      Пример: <code>{"{ \"width\": 402, \"height\": 874, \"device\": \"iphone-16-pro\" }"}</code>
                     </div>
                   </div>
                 </div>
