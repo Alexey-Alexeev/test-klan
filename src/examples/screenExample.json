@@ -1,0 +1,104 @@
+{
+  "type": "screen",
+  "baseParams": {},
+  "typeParams": {
+    "state": [
+      {
+        "key": "title",
+        "type": "string",
+        "value": "Шапка экрана"
+      }
+    ],
+    "content": {
+      "type": "screen",
+      "header": {
+        "type": "row",
+        "alignment": "center",
+        "padding": 16,
+        "gap": 8,
+        "content": [
+          {
+            "type": "icon",
+            "src": { "type": "res", "value": "arrow_left" },
+            "actions": [{ "type": "navigation_back" }]
+          },
+          {
+            "type": "text",
+            "text": "{title}",
+            "style": {
+              "fontSize": 18,
+              "fontWeight": "600"
+            }
+          }
+        ]
+      },
+      "content": {
+        "type": "column_scroll",
+        "gap": 16,
+        "padding": 16,
+        "content": [
+          {
+            "type": "container",
+            "direction": "column",
+            "alignment": "top-right",
+            "padding": 16,
+            "margin": { "top": 8, "bottom": 8 },
+            "gap": 8,
+            "widthMode": "fill",
+            "heightMode": "fixed",
+            "heightValue": 200,
+            "style": {
+              "backgroundColor": "rgba(240, 240, 240, 0.3)",
+              "border": "1px dashed #ccc",
+              "borderRadius": 8
+            },
+            "content": [
+              {
+                "type": "button",
+                "text": "Нажмите здесь",
+                "variant": "primary",
+                "disabled": false,
+                "style": {
+                  "padding": "12px 24px",
+                  "backgroundColor": "hsl(142 100% 31%)",
+                  "color": "white",
+                  "borderRadius": 8
+                }
+              }
+            ]
+          },
+          {
+            "type": "container",
+            "direction": "column",
+            "alignment": "center",
+            "padding": 16,
+            "margin": { "top": 8, "bottom": 8 },
+            "gap": 8,
+            "widthMode": "fill",
+            "heightMode": "fixed",
+            "heightValue": 200,
+            "style": {
+              "backgroundColor": "rgba(240, 240, 240, 0.3)",
+              "border": "1px dashed #ccc",
+              "borderRadius": 8
+            },
+            "content": [
+              {
+                "type": "button",
+                "text": "Нажмите здесь",
+                "variant": "primary",
+                "style": {
+                  "padding": "12px 24px",
+                  "backgroundColor": "hsl(142 100% 31%)",
+                  "color": "white",
+                  "borderRadius": 8
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "footer": {}
+    }
+  }
+}

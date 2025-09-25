@@ -1,12 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { Code } from 'lucide-react';
+import { Code, Copy } from 'lucide-react';
 import * as icons from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { useToast } from '../hooks/use-toast';
 import { loadWidgets, addWidget } from '../features/canvas/canvasSlice';
 import { widgetDefinitions, createDefaultWidget } from '../lib/widgetDefaults';
+import { convertWidgetsToScreenJson, convertScreenJsonToWidgets } from '../lib/jsonConverter';
 import { Toolbar } from '../components/builder/Toolbar';
 import { Canvas } from '../components/builder/Canvas';
 import { PropertiesPanel } from '../components/builder/PropertiesPanel';
@@ -16,6 +18,7 @@ export function BuilderTab() {
   const dispatch = useAppDispatch();
   const { widgets, canvasSize } = useAppSelector(state => state.canvas);
   const { viewMode } = useAppSelector(state => state.app);
+  const { toast } = useToast();
   
   const mainAreaRef = useRef<HTMLDivElement>(null);
   const [jsonValue, setJsonValue] = useState('');
@@ -24,21 +27,58 @@ export function BuilderTab() {
   const handleJsonImport = () => {
     try {
       const parsed = JSON.parse(jsonValue);
-      if (Array.isArray(parsed)) {
+      
+      // Проверяем, является ли это новой структурой экрана
+      if (parsed.type === 'screen' && parsed.typeParams && parsed.typeParams.content) {
+        try {
+          const convertedWidgets = convertScreenJsonToWidgets(parsed);
+          dispatch(loadWidgets(convertedWidgets));
+          setJsonError('');
+        } catch (error) {
+          console.error('Ошибка при конвертации JSON экрана:', error);
+          setJsonError('Ошибка при конвертации JSON экрана');
+        }
+      } else if (Array.isArray(parsed)) {
+        // Старая структура - массив виджетов
         dispatch(loadWidgets(parsed));
         setJsonError('');
       } else {
-        setJsonError('JSON должен быть массивом виджетов');
+        setJsonError('JSON должен быть структурой экрана или массивом виджетов');
       }
     } catch (error) {
       setJsonError('Неверный формат JSON');
     }
   };
 
-
-  const exportJson = () => {
-    return JSON.stringify(widgets, null, 2);
+  const handleCopyJson = async () => {
+    try {
+      await navigator.clipboard.writeText(jsonValue || exportJson());
+      toast({
+        title: "JSON скопирован",
+        description: "JSON структура скопирована в буфер обмена",
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error('Ошибка при копировании JSON:', error);
+      toast({
+        title: "Ошибка копирования",
+        description: "Не удалось скопировать JSON в буфер обмена",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
+
+  const exportJson = useCallback(() => {
+    try {
+      // Преобразуем виджеты в новую структуру экрана
+      const screenJson = convertWidgetsToScreenJson(widgets);
+      return JSON.stringify(screenJson, null, 2);
+    } catch (error) {
+      console.error('Ошибка при экспорте JSON:', error);
+      return JSON.stringify({ error: 'Ошибка при экспорте JSON' }, null, 2);
+    }
+  }, [widgets]);
 
   const handleWidgetClick = (widgetType: string) => {
     // Добавляем виджет в центр текущего холста
@@ -52,12 +92,10 @@ export function BuilderTab() {
     if (widget) dispatch(addWidget(widget));
   };
 
-  // Update JSON when widgets change and in JSON mode
-  useState(() => {
-    if (viewMode === 'json') {
-      setJsonValue(exportJson());
-    }
-  });
+  // Update JSON when widgets change
+  useEffect(() => {
+    setJsonValue(exportJson());
+  }, [widgets, exportJson]);
 
   return (
     <div className="flex-1 flex flex-col h-full">
@@ -123,18 +161,24 @@ export function BuilderTab() {
           {viewMode === 'design' ? (
             <Canvas viewportContainerRef={mainAreaRef} />
           ) : (
-            <div className="flex-1 p-6 space-y-4">
+            <div className="flex-1 p-6 space-y-4 overflow-y-auto">
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-lg font-semibold">JSON Редактор</h2>
                   <p className="text-sm text-muted-foreground">
-                    Редактируйте структуру виджетов напрямую в формате JSON
+                    Редактируйте структуру экрана в формате JSON. Поддерживается новая структура экрана и старый формат виджетов.
                   </p>
                 </div>
-                <Button onClick={handleJsonImport} disabled={!jsonValue.trim()}>
-                  <Code className="h-4 w-4 mr-2" />
-                  Применить изменения
-                </Button>
+                <div className="flex gap-2">
+                  <Button onClick={handleCopyJson} variant="outline">
+                    <Copy className="h-4 w-4 mr-2" />
+                    Копировать JSON
+                  </Button>
+                  <Button onClick={handleJsonImport} disabled={!jsonValue.trim()}>
+                    <Code className="h-4 w-4 mr-2" />
+                    Применить изменения
+                  </Button>
+                </div>
               </div>
               
               {jsonError && (
@@ -149,12 +193,58 @@ export function BuilderTab() {
                   setJsonValue(e.target.value);
                   setJsonError('');
                 }}
-                className="font-mono text-sm min-h-[400px] custom-scrollbar"
-                placeholder="JSON структура виджетов..."
+                className="font-mono text-sm min-h-[600px] custom-scrollbar"
+                placeholder="JSON структура экрана или виджетов..."
               />
               
               <div className="text-xs text-muted-foreground">
                 Количество виджетов: {widgets.length}
+              </div>
+              
+              {/* Подсказки для JSON значений */}
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg border">
+                <h4 className="text-sm font-medium mb-2">Подсказки для JSON значений:</h4>
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <strong>direction:</strong>
+                    <div className="mt-1 text-muted-foreground">
+                      <code>"row"</code> (горизонтально), <code>"column"</code> (вертикально)
+                    </div>
+                  </div>
+                  <div>
+                    <strong>alignment:</strong>
+                    <div className="mt-1 text-muted-foreground">
+                      <code>"top-left"</code>, <code>"top-center"</code>, <code>"top-right"</code>,<br/>
+                      <code>"center-left"</code>, <code>"center"</code>, <code>"center-right"</code>,<br/>
+                      <code>"bottom-left"</code>, <code>"bottom-center"</code>, <code>"bottom-right"</code>
+                    </div>
+                  </div>
+                  <div>
+                    <strong>widthMode / heightMode:</strong>
+                    <div className="mt-1 text-muted-foreground">
+                      <code>"fill"</code> (заполнить), <code>"fixed"</code> (фиксированный), <code>"auto"</code> (авто)
+                    </div>
+                  </div>
+                  <div>
+                    <strong>variant (для кнопок):</strong>
+                    <div className="mt-1 text-muted-foreground">
+                      <code>"primary"</code>, <code>"secondary"</code>, <code>"outline"</code>, <code>"ghost"</code>
+                    </div>
+                  </div>
+                  <div>
+                    <strong>disabled:</strong>
+                    <div className="mt-1 text-muted-foreground">
+                      <code>true</code> (отключено), <code>false</code> (активно)
+                    </div>
+                  </div>
+                  <div>
+                    <strong>style свойства:</strong>
+                    <div className="mt-1 text-muted-foreground">
+                      <code>backgroundColor</code>, <code>color</code>, <code>fontSize</code>, <code>fontWeight</code>,<br/>
+                      <code>padding</code>, <code>margin</code>, <code>borderRadius</code>, <code>border</code>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
