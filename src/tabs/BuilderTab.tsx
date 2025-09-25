@@ -7,6 +7,7 @@ import * as icons from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { loadWidgets, addWidget } from '../features/canvas/canvasSlice';
 import { widgetDefinitions, createDefaultWidget } from '../lib/widgetDefaults';
+import { convertWidgetsToScreenJson, convertScreenJsonToWidgets } from '../lib/jsonConverter';
 import { Toolbar } from '../components/builder/Toolbar';
 import { Canvas } from '../components/builder/Canvas';
 import { PropertiesPanel } from '../components/builder/PropertiesPanel';
@@ -24,20 +25,38 @@ export function BuilderTab() {
   const handleJsonImport = () => {
     try {
       const parsed = JSON.parse(jsonValue);
-      if (Array.isArray(parsed)) {
+      
+      // Проверяем, является ли это новой структурой экрана
+      if (parsed.type === 'screen' && parsed.typeParams && parsed.typeParams.content) {
+        try {
+          const convertedWidgets = convertScreenJsonToWidgets(parsed);
+          dispatch(loadWidgets(convertedWidgets));
+          setJsonError('');
+        } catch (error) {
+          console.error('Ошибка при конвертации JSON экрана:', error);
+          setJsonError('Ошибка при конвертации JSON экрана');
+        }
+      } else if (Array.isArray(parsed)) {
+        // Старая структура - массив виджетов
         dispatch(loadWidgets(parsed));
         setJsonError('');
       } else {
-        setJsonError('JSON должен быть массивом виджетов');
+        setJsonError('JSON должен быть структурой экрана или массивом виджетов');
       }
     } catch (error) {
       setJsonError('Неверный формат JSON');
     }
   };
 
-
   const exportJson = () => {
-    return JSON.stringify(widgets, null, 2);
+    try {
+      // Преобразуем виджеты в новую структуру экрана
+      const screenJson = convertWidgetsToScreenJson(widgets);
+      return JSON.stringify(screenJson, null, 2);
+    } catch (error) {
+      console.error('Ошибка при экспорте JSON:', error);
+      return JSON.stringify({ error: 'Ошибка при экспорте JSON' }, null, 2);
+    }
   };
 
   const handleWidgetClick = (widgetType: string) => {
@@ -128,7 +147,7 @@ export function BuilderTab() {
                 <div>
                   <h2 className="text-lg font-semibold">JSON Редактор</h2>
                   <p className="text-sm text-muted-foreground">
-                    Редактируйте структуру виджетов напрямую в формате JSON
+                    Редактируйте структуру экрана в формате JSON. Поддерживается новая структура экрана и старый формат виджетов.
                   </p>
                 </div>
                 <Button onClick={handleJsonImport} disabled={!jsonValue.trim()}>
@@ -150,7 +169,7 @@ export function BuilderTab() {
                   setJsonError('');
                 }}
                 className="font-mono text-sm min-h-[400px] custom-scrollbar"
-                placeholder="JSON структура виджетов..."
+                placeholder="JSON структура экрана или виджетов..."
               />
               
               <div className="text-xs text-muted-foreground">
