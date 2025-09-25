@@ -68,9 +68,9 @@ export function BuilderTab() {
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar with Components Tree and Widgets Palette */}
         {viewMode === 'design' && (
-          <div className="w-80 border-r border-border bg-card flex flex-col">
+          <div className="w-96 border-r border-border bg-card flex flex-col">
             {/* Components Tree */}
-            <div className="flex-1 p-4 border-b">
+            <div className="flex-1 p-4 border-b min-h-[400px]">
               <ComponentsTree />
             </div>
             

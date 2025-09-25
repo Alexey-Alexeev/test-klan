@@ -675,14 +675,14 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
               />
             ))}
           
-          {/* Guides for alignment */}
-          <Guides
+          {/* Guides for alignment - DISABLED */}
+          {/* <Guides
             widgets={widgets}
             selectedWidgetId={selectedWidgetId}
             canvasSize={canvasSize}
             zoom={zoom}
             panOffset={panOffset}
-          />
+          /> */}
           
           {/* Drop zone indicator */}
           <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-transparent transition-colors duration-200 ease-in-out" />

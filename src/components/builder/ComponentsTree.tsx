@@ -535,11 +535,11 @@ const handleMoveToRoot = (widgetId: string) => {
   };
 
   return (
-    <Card className="h-full w-full">
+    <Card className="h-full w-full min-h-[350px]">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg">Дерево компонентов</CardTitle>
       </CardHeader>
-      <CardContent className="p-0">
+      <CardContent className="p-0 flex-1 overflow-y-auto">
         <div className="space-y-1 min-w-0">
           {/* Tree nodes */}
           {renderTree(null)}

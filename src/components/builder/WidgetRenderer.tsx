@@ -114,8 +114,8 @@ export function WidgetRenderer({ widget, isSelected, isEditable }: WidgetCompone
     
     let position = { x: data.x, y: data.y };
     
-    // Apply automatic alignment
-    position = snapToAlignment(position);
+    // Apply automatic alignment - DISABLED
+    // position = snapToAlignment(position);
     
     // Snap to grid if enabled
     if (gridSnap) {
@@ -136,7 +136,7 @@ export function WidgetRenderer({ widget, isSelected, isEditable }: WidgetCompone
     // For child widgets, constraints are handled in updateWidgetPosition
     
     dispatch(updateWidgetPosition({ id: widget.id, position }));
-  }, [dispatch, widget.id, gridSnap, snapSize, isEditable, snapToAlignment, widget.parentId, widget.size, widgets]);
+  }, [dispatch, widget.id, gridSnap, snapSize, isEditable, widget.parentId, widget.size, widgets]);
 
   const handleDragStart = useCallback(() => {
     setIsDragging(true);
