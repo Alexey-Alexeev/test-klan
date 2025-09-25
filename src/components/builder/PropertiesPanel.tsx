@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2, Copy, ArrowUp, ArrowDown } from 'lucide-react';
 import { AlignmentGridControl, OrientationControl } from '@/components/ui/alignment-control';
 import { SpacingControl, BoxModelControl } from '@/components/ui/spacing-control';
+import { DataBindingSection } from './DataBindingSection';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { updateWidget, deleteWidget, duplicateWidget, bringToFront, sendToBack } from '../../features/canvas/canvasSlice';
 import { 
@@ -354,6 +355,15 @@ export function PropertiesPanel() {
           </Card>
         )}
 
+        {/* Data Binding Section for Text Widget */}
+        {localWidget && localWidget.type === 'text' && (
+          <DataBindingSection 
+            widget={localWidget} 
+            onUpdate={handleUpdate}
+            allWidgets={widgets}
+          />
+        )}
+
         {localWidget && localWidget.type === 'container' && (() => {
           // Helper functions for backward compatibility
           const getPaddingValue = (side: 'top' | 'right' | 'bottom' | 'left') => {
@@ -465,6 +475,13 @@ export function PropertiesPanel() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Data Binding Section */}
+            <DataBindingSection 
+              widget={localWidget} 
+              onUpdate={handleUpdate}
+              allWidgets={widgets}
+            />
 
           </>
           );
@@ -604,6 +621,56 @@ export function PropertiesPanel() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Checkbox Widget */}
+        {localWidget && localWidget.type === 'checkbox' && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Настройки чекбокса</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <Label htmlFor="checkboxLabel">Текст</Label>
+                <Input
+                  id="checkboxLabel"
+                  value={(localWidget as ICheckboxWidget).props.label}
+                  onChange={(e) => handlePropsUpdate({ label: e.target.value })}
+                />
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="checkboxChecked"
+                  checked={(localWidget as ICheckboxWidget).props.checked}
+                  onChange={(e) => handlePropsUpdate({ checked: e.target.checked })}
+                  className="rounded"
+                />
+                <Label htmlFor="checkboxChecked" className="text-sm">Выбран по умолчанию</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="checkboxDisabled"
+                  checked={(localWidget as ICheckboxWidget).props.disabled}
+                  onChange={(e) => handlePropsUpdate({ disabled: e.target.checked })}
+                  className="rounded"
+                />
+                <Label htmlFor="checkboxDisabled" className="text-sm">Заблокирован</Label>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Data Binding Section for Checkbox Widget */}
+        {localWidget && localWidget.type === 'checkbox' && (
+          <DataBindingSection 
+            widget={localWidget} 
+            onUpdate={handleUpdate}
+            allWidgets={widgets}
+          />
         )}
 
         {/* Style properties */}

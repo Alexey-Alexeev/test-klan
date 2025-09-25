@@ -13,6 +13,7 @@ import { SpacerWidget } from '../widgets/SpacerWidget';
 import { IconWidget } from '../widgets/IconWidget';
 import { BadgeWidget } from '../widgets/BadgeWidget';
 import { ContainerWidget } from '../widgets/ContainerWidget';
+import { CheckboxWidget } from '../widgets/CheckboxWidget';
 import { SelectionBox } from './SelectionBox';
 
 export function WidgetRenderer({ widget, isSelected, isEditable }: WidgetComponentProps) {
@@ -268,6 +269,8 @@ export function WidgetRenderer({ widget, isSelected, isEditable }: WidgetCompone
         return <IconWidget {...commonProps} />;
       case 'badge':
         return <BadgeWidget {...commonProps} />;
+      case 'checkbox':
+        return <CheckboxWidget {...commonProps} />;
       case 'container':
         return <ContainerWidget {...commonProps} />;
       default:
