@@ -2,9 +2,10 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { Code } from 'lucide-react';
+import { Code, Copy } from 'lucide-react';
 import * as icons from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { useToast } from '../hooks/use-toast';
 import { loadWidgets, addWidget } from '../features/canvas/canvasSlice';
 import { widgetDefinitions, createDefaultWidget } from '../lib/widgetDefaults';
 import { convertWidgetsToScreenJson, convertScreenJsonToWidgets } from '../lib/jsonConverter';
@@ -17,6 +18,7 @@ export function BuilderTab() {
   const dispatch = useAppDispatch();
   const { widgets, canvasSize } = useAppSelector(state => state.canvas);
   const { viewMode } = useAppSelector(state => state.app);
+  const { toast } = useToast();
   
   const mainAreaRef = useRef<HTMLDivElement>(null);
   const [jsonValue, setJsonValue] = useState('');
@@ -45,6 +47,25 @@ export function BuilderTab() {
       }
     } catch (error) {
       setJsonError('Неверный формат JSON');
+    }
+  };
+
+  const handleCopyJson = async () => {
+    try {
+      await navigator.clipboard.writeText(jsonValue || exportJson());
+      toast({
+        title: "JSON скопирован",
+        description: "JSON структура скопирована в буфер обмена",
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error('Ошибка при копировании JSON:', error);
+      toast({
+        title: "Ошибка копирования",
+        description: "Не удалось скопировать JSON в буфер обмена",
+        variant: "destructive",
+        duration: 3000,
+      });
     }
   };
 
@@ -148,10 +169,16 @@ export function BuilderTab() {
                     Редактируйте структуру экрана в формате JSON. Поддерживается новая структура экрана и старый формат виджетов.
                   </p>
                 </div>
-                <Button onClick={handleJsonImport} disabled={!jsonValue.trim()}>
-                  <Code className="h-4 w-4 mr-2" />
-                  Применить изменения
-                </Button>
+                <div className="flex gap-2">
+                  <Button onClick={handleCopyJson} variant="outline">
+                    <Copy className="h-4 w-4 mr-2" />
+                    Копировать JSON
+                  </Button>
+                  <Button onClick={handleJsonImport} disabled={!jsonValue.trim()}>
+                    <Code className="h-4 w-4 mr-2" />
+                    Применить изменения
+                  </Button>
+                </div>
               </div>
               
               {jsonError && (
@@ -166,7 +193,7 @@ export function BuilderTab() {
                   setJsonValue(e.target.value);
                   setJsonError('');
                 }}
-                className="font-mono text-sm min-h-[400px] custom-scrollbar"
+                className="font-mono text-sm min-h-[600px] custom-scrollbar"
                 placeholder="JSON структура экрана или виджетов..."
               />
               
