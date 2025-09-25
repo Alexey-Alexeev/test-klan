@@ -45,6 +45,7 @@ export const widgetDefinitions: WidgetDefinition[] = [
       widthMode: 'fill',
       heightMode: 'fixed',
       heightValue: 200,
+      dataSource: undefined,
     },
     defaultStyle: {
       backgroundColor: 'rgba(240, 240, 240, 0.3)',
@@ -85,6 +86,7 @@ export const widgetDefinitions: WidgetDefinition[] = [
       content: 'Ваш текст здесь',
       align: 'left' as const,
       tag: 'p' as const,
+      binding: undefined,
     },
     defaultStyle: {
       color: 'hsl(0 0% 10%)',
@@ -258,6 +260,8 @@ export const widgetDefinitions: WidgetDefinition[] = [
       label: 'Опция',
       checked: false,
       disabled: false,
+      binding: undefined,
+      valueBinding: undefined,
     },
     defaultStyle: {},
     defaultSize: { width: 120, height: 20 },

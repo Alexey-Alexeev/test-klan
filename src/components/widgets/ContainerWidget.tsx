@@ -9,6 +9,9 @@ export function ContainerWidget({ widget, isSelected, onSelect }: WidgetComponen
   
   // Get child widgets
   const childWidgets = widgets.filter(w => containerWidget.props.children.includes(w.id));
+  const dataSource = containerWidget.props.dataSource;
+  const hasDataSource = Boolean(dataSource);
+  
   
   
   const { alignment, wrap } = containerWidget.props;
@@ -85,6 +88,14 @@ export function ContainerWidget({ widget, isSelected, onSelect }: WidgetComponen
       style={containerStyle}
       className="container-widget"
     >
+      {hasDataSource && (
+        <div 
+          key={`datasource-badge-${dataSource?.collection}-${dataSource?.itemAlias}`}
+          className="absolute top-2 left-2 z-20 text-[10px] font-semibold uppercase tracking-wide px-2 py-1 rounded bg-blue-600/90 text-white pointer-events-none"
+        >
+          {`Список • ${dataSource?.collection} → ${dataSource?.itemAlias || 'item'}`}
+        </div>
+      )}
       {/* Placeholder content when empty */}
       {childWidgets.length === 0 && (
         <div 
@@ -126,6 +137,23 @@ export function ContainerWidget({ widget, isSelected, onSelect }: WidgetComponen
               isSelected={false}
               isEditable={false}
             />
+
+            {hasDataSource && childWidget.type === 'text' && (childWidget as any).props.binding && (
+              <div 
+                key={`text-binding-${childWidget.id}-${dataSource?.itemAlias}-${(childWidget as any).props.binding}`}
+                className="absolute -top-4 left-0 text-[10px] font-medium text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded"
+              >
+                {(dataSource?.itemAlias || 'item') + '.' + (childWidget as any).props.binding}
+              </div>
+            )}
+            {hasDataSource && childWidget.type === 'checkbox' && (childWidget as any).props.binding && (
+              <div 
+                key={`checkbox-binding-${childWidget.id}-${dataSource?.itemAlias}-${(childWidget as any).props.binding}`}
+                className="absolute -top-4 left-0 text-[10px] font-medium text-green-600 bg-green-50 px-1.5 py-0.5 rounded"
+              >
+                {(dataSource?.itemAlias || 'item') + '.' + (childWidget as any).props.binding}
+              </div>
+            )}
           </div>
         );
       })}

@@ -28,6 +28,13 @@ export interface IWidgetStyle {
 // Widget types
 export type WidgetType = 'button' | 'text' | 'input' | 'image' | 'card' | 'divider' | 'spacer' | 'icon' | 'badge' | 'avatar' | 'progress' | 'checkbox' | 'radio' | 'select' | 'textarea' | 'slider' | 'switch' | 'tabs' | 'accordion' | 'container' | 'root';
 
+export interface IDataBindingSource {
+  type: 'table';
+  collection: string;
+  itemAlias?: string;
+  limit?: number;
+}
+
 export interface IWidgetBase {
   id: string;
   type: WidgetType;
@@ -55,6 +62,7 @@ export interface ITextWidget extends IWidgetBase {
     content: string;
     align: 'left' | 'center' | 'right';
     tag: 'p' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+    binding?: string; // e.g. shop.name
   };
 }
 
@@ -148,6 +156,8 @@ export interface ICheckboxWidget extends IWidgetBase {
     label: string;
     checked: boolean;
     disabled: boolean;
+    binding?: string; // Optional data binding for label
+    valueBinding?: string; // Optional binding for checked state
   };
 }
 
@@ -259,6 +269,7 @@ export interface IContainerWidget extends IWidgetBase {
     heightMode?: 'fixed' | 'fill' | 'wrap-content';
     widthValue?: number;
     heightValue?: number;
+    dataSource?: IDataBindingSource;
   };
 }
 

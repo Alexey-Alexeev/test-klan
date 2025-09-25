@@ -3,6 +3,7 @@ import { WidgetComponentProps, ITextWidget } from '../../types';
 export function TextWidget({ widget, isSelected, onSelect }: WidgetComponentProps) {
   const textWidget = widget as ITextWidget;
   const Tag = textWidget.props.tag;
+  const bindingHint = textWidget.props.binding;
   
   return (
     <Tag
@@ -22,7 +23,14 @@ export function TextWidget({ widget, isSelected, onSelect }: WidgetComponentProp
         alignItems: 'center',
       }}
     >
-      {textWidget.props.content}
+      <span className="flex items-center gap-2">
+        {textWidget.props.content}
+        {bindingHint && (
+          <span className="px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide rounded bg-amber-50 text-amber-700 border border-amber-200">
+            {bindingHint}
+          </span>
+        )}
+      </span>
     </Tag>
   );
 }
