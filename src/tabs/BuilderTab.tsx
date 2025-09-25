@@ -161,7 +161,7 @@ export function BuilderTab() {
           {viewMode === 'design' ? (
             <Canvas viewportContainerRef={mainAreaRef} />
           ) : (
-            <div className="flex-1 p-6 space-y-4">
+            <div className="flex-1 p-6 space-y-4 overflow-y-auto">
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-lg font-semibold">JSON Редактор</h2>
@@ -199,6 +199,52 @@ export function BuilderTab() {
               
               <div className="text-xs text-muted-foreground">
                 Количество виджетов: {widgets.length}
+              </div>
+              
+              {/* Подсказки для JSON значений */}
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg border">
+                <h4 className="text-sm font-medium mb-2">Подсказки для JSON значений:</h4>
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <strong>direction:</strong>
+                    <div className="mt-1 text-muted-foreground">
+                      <code>"row"</code> (горизонтально), <code>"column"</code> (вертикально)
+                    </div>
+                  </div>
+                  <div>
+                    <strong>alignment:</strong>
+                    <div className="mt-1 text-muted-foreground">
+                      <code>"top-left"</code>, <code>"top-center"</code>, <code>"top-right"</code>,<br/>
+                      <code>"center-left"</code>, <code>"center"</code>, <code>"center-right"</code>,<br/>
+                      <code>"bottom-left"</code>, <code>"bottom-center"</code>, <code>"bottom-right"</code>
+                    </div>
+                  </div>
+                  <div>
+                    <strong>widthMode / heightMode:</strong>
+                    <div className="mt-1 text-muted-foreground">
+                      <code>"fill"</code> (заполнить), <code>"fixed"</code> (фиксированный), <code>"auto"</code> (авто)
+                    </div>
+                  </div>
+                  <div>
+                    <strong>variant (для кнопок):</strong>
+                    <div className="mt-1 text-muted-foreground">
+                      <code>"primary"</code>, <code>"secondary"</code>, <code>"outline"</code>, <code>"ghost"</code>
+                    </div>
+                  </div>
+                  <div>
+                    <strong>disabled:</strong>
+                    <div className="mt-1 text-muted-foreground">
+                      <code>true</code> (отключено), <code>false</code> (активно)
+                    </div>
+                  </div>
+                  <div>
+                    <strong>style свойства:</strong>
+                    <div className="mt-1 text-muted-foreground">
+                      <code>backgroundColor</code>, <code>color</code>, <code>fontSize</code>, <code>fontWeight</code>,<br/>
+                      <code>padding</code>, <code>margin</code>, <code>borderRadius</code>, <code>border</code>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
