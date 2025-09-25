@@ -37,6 +37,8 @@ export interface ContentElement {
   widthMode?: string;
   heightMode?: string;
   heightValue?: number;
+  width?: number;
+  height?: number;
   variant?: string;
   disabled?: boolean;
   content?: ContentElement[];
@@ -67,7 +69,14 @@ function widgetToContentElement(widget: IWidget, allWidgets: IWidget[]): Content
     style: {
       ...widget.style,
       margin: widget.style.margin || '0px'
-    }
+    },
+    // Добавляем позицию и размеры в margin и width/height
+    margin: {
+      top: widget.position.y,
+      left: widget.position.x
+    },
+    width: widget.size.width,
+    height: widget.size.height
   };
 
   switch (widget.type) {
@@ -140,9 +149,7 @@ function widgetToContentElement(widget: IWidget, allWidgets: IWidget[]): Content
         padding: typeof containerWidget.props.padding === 'number' 
           ? containerWidget.props.padding 
           : 16,
-        margin: typeof containerWidget.props.margin === 'number' 
-          ? { top: containerWidget.props.margin, bottom: containerWidget.props.margin }
-          : containerWidget.props.margin,
+        // margin уже установлен в baseElement из позиции виджета
         gap: containerWidget.props.gap,
         widthMode: containerWidget.props.widthMode || 'fill',
         heightMode: containerWidget.props.heightMode || 'fixed',
@@ -295,17 +302,23 @@ export function convertScreenJsonToWidgets(screenJson: ScreenJson): IWidget[] {
   }
   
   // Рекурсивная функция для преобразования ContentElement в виджет
-  function contentElementToWidget(element: ContentElement, parentId?: string): IWidget {
+  function contentElementToWidget(element: ContentElement): IWidget {
     const widgetId = `widget_${element.type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     const baseWidget: IWidget = {
       id: widgetId,
       type: element.type as any,
-      position: { x: 0, y: 0 },
-      size: { width: 200, height: 50 },
+      position: { 
+        x: element.margin?.left || 0, 
+        y: element.margin?.top || 0 
+      },
+      size: { 
+        width: element.width || 200, 
+        height: element.height || 50 
+      },
       zIndex: 1,
       style: element.style || {},
-      parentId
+      parentId: undefined // Корневые виджеты не имеют родителя
     };
 
     switch (element.type) {
@@ -330,9 +343,12 @@ export function convertScreenJsonToWidgets(screenJson: ScreenJson): IWidget[] {
         } as ITextWidget;
 
       case 'container':
-        const childWidgets = element.content?.map(child => 
-          contentElementToWidget(child, widgetId)
-        ) || [];
+        const childWidgets = element.content?.map(child => {
+          const childWidget = contentElementToWidget(child);
+          // Устанавливаем родительский ID для дочерних элементов
+          childWidget.parentId = widgetId;
+          return childWidget;
+        }) || [];
         
         widgets.push(...childWidgets);
         
@@ -363,9 +379,19 @@ export function convertScreenJsonToWidgets(screenJson: ScreenJson): IWidget[] {
   }
 
   // Преобразуем основной контент
-  if (screenJson.typeParams.content.content) {
-    const mainContent = contentElementToWidget(screenJson.typeParams.content.content);
-    widgets.push(mainContent);
+  const screenContent = screenJson.typeParams.content;
+  
+  // Обрабатываем content.content (массив элементов внутри column_scroll)
+  if (screenContent.content && Array.isArray(screenContent.content.content)) {
+    screenContent.content.content.forEach(element => {
+      const widget = contentElementToWidget(element);
+      widgets.push(widget);
+    });
+  }
+  // Fallback для старого формата - если content сам является элементом
+  else if (screenContent.content && !Array.isArray(screenContent.content)) {
+    const widget = contentElementToWidget(screenContent.content);
+    widgets.push(widget);
   }
 
   return widgets;

@@ -141,9 +141,7 @@ const canvasSlice = createSlice({
         state.widgets.push(duplicate);
         state.selectedWidgetId = duplicate.id;
 
-        if (duplicate.parentId) {
-          reflowContainerLayout(state, duplicate.parentId);
-        }
+        // Container layout reflow не нужен при использовании margin-based positioning
       }
     },
 
@@ -158,11 +156,7 @@ const canvasSlice = createSlice({
       state.widgets = action.payload;
       state.selectedWidgetId = null;
 
-      state.widgets
-        .filter((widget): widget is IContainerWidget => widget.type === 'container')
-        .forEach(container => {
-          reflowContainerLayout(state, container.id);
-        });
+      // Container layout reflow не нужен при использовании margin-based positioning
     },
 
     setCanvasSize: (state, action: PayloadAction<{ width: number; height: number }>) => {
@@ -189,11 +183,7 @@ const canvasSlice = createSlice({
           if (widget.size.height > state.canvasSize.height) widget.size.height = state.canvasSize.height;
         });
 
-      state.widgets
-        .filter((widget): widget is IContainerWidget => widget.type === 'container')
-        .forEach(container => {
-          reflowContainerLayout(state, container.id);
-        });
+      // Container layout reflow не нужен при использовании margin-based positioning
       }
     },
 

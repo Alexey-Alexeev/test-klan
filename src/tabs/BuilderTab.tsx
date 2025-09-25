@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
@@ -48,7 +48,7 @@ export function BuilderTab() {
     }
   };
 
-  const exportJson = () => {
+  const exportJson = useCallback(() => {
     try {
       // Преобразуем виджеты в новую структуру экрана
       const screenJson = convertWidgetsToScreenJson(widgets);
@@ -57,7 +57,7 @@ export function BuilderTab() {
       console.error('Ошибка при экспорте JSON:', error);
       return JSON.stringify({ error: 'Ошибка при экспорте JSON' }, null, 2);
     }
-  };
+  }, [widgets]);
 
   const handleWidgetClick = (widgetType: string) => {
     // Добавляем виджет в центр текущего холста
@@ -71,12 +71,10 @@ export function BuilderTab() {
     if (widget) dispatch(addWidget(widget));
   };
 
-  // Update JSON when widgets change and in JSON mode
-  useState(() => {
-    if (viewMode === 'json') {
-      setJsonValue(exportJson());
-    }
-  });
+  // Update JSON when widgets change
+  useEffect(() => {
+    setJsonValue(exportJson());
+  }, [widgets, exportJson]);
 
   return (
     <div className="flex-1 flex flex-col h-full">
