@@ -1,14 +1,16 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { selectWidget, addWidget, updateWidget, setPanOffset, setCanvasSize, toggleCanvasSizeLock, setSelectedPreset } from '../../features/canvas/canvasSlice';
 import { useAppSelector as useAppSelectorApp } from '../../store/hooks';
 import { zoomIn, zoomOut } from '../../features/app/appSlice';
 import { createDefaultWidget } from '../../lib/widgetDefaults';
-import { WidgetRenderer } from './WidgetRenderer';
 import { Ruler } from './Ruler';
 import { Guides } from './Guides';
-import { CanvasSizePresetSelector, CANVAS_SIZE_PRESETS } from '@/components/ui/canvas-size-presets';
+import { CanvasToolbar } from './CanvasToolbar';
+import { DeviceFrame } from './DeviceFrame';
+import { CanvasScreen } from './CanvasScreen';
+import { ResizeHandles } from './ResizeHandles';
+import { CANVAS_SIZE_PRESETS } from '@/components/ui/canvas-size-presets';
 
 
 const HEADER_OFFSET = 160;
@@ -82,35 +84,13 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
     dispatch(setSelectedPreset('custom'));
   }, [dispatch, sizeDraft, isCanvasSizeLocked, canvasSize.width, canvasSize.height, gridSnap, snapSize]);
 
-  const handlePresetChange = useCallback((presetId: string) => {
-    console.log('handlePresetChange called with:', presetId);
-    dispatch(setSelectedPreset(presetId));
-    
-    if (presetId === 'custom') {
-      // Unlock canvas size for custom editing (only if not locked by containers)
-      if (isCanvasSizeLocked && !widgets.some(w => w.type === 'container')) {
-        dispatch(toggleCanvasSizeLock());
-      }
-      return; // Don't change size, just allow manual input
-    }
-    
-    const preset = CANVAS_SIZE_PRESETS.find(p => p.id === presetId);
-    console.log('Found preset:', preset);
-    if (preset && preset.width > 0 && preset.height > 0) {
-      // Always allow changing to device preset, even if currently locked
-      console.log('Dispatching setCanvasSize:', { width: preset.width, height: preset.height });
-      dispatch(setCanvasSize({ width: preset.width, height: preset.height }));
-      setSizeDraft({ width: String(preset.width), height: String(preset.height) });
-      
-      // Auto-lock canvas size for device presets (iPhone, Samsung)
-      // Only lock if not already locked by containers
-      if (!isCanvasSizeLocked || !widgets.some(w => w.type === 'container')) {
-        if (!isCanvasSizeLocked) {
-          dispatch(toggleCanvasSizeLock());
-        }
-      }
-    }
-  }, [dispatch, isCanvasSizeLocked, widgets]);
+  const handleSizeDraftChange = useCallback((draft: { width: string; height: string }) => {
+    setSizeDraft(draft);
+  }, []);
+
+  const handleCommitSize = useCallback(() => {
+    commitSizeFromDraft();
+  }, [commitSizeFromDraft]);
 
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -448,385 +428,48 @@ export function Canvas({ viewportContainerRef }: { viewportContainerRef?: React.
         }}
       >
         {/* Toolbar above smartphone (outside canvas) */}
-        <div className="sticky top-0 z-30 w-full flex items-center justify-center py-2">
-          <div className="inline-flex items-center gap-3 rounded-md bg-white/80 backdrop-blur px-3 py-1 shadow border border-gray-200">
-            <div className="flex items-center gap-2">
-              <CanvasSizePresetSelector
-                value={selectedPreset}
-                onValueChange={handlePresetChange}
-                disabled={false}
-              />
-              <span className="text-xs text-gray-400">|</span>
-              <Input
-                className="h-7 w-20 text-xs"
-                type="number"
-                value={sizeDraft.width}
-                disabled={isCanvasSizeLocked}
-                onChange={(e) => setSizeDraft((p) => ({ ...p, width: e.target.value }))}
-                onBlur={commitSizeFromDraft}
-                onKeyDown={(e) => { if (e.key === 'Enter') { commitSizeFromDraft(); } }}
-                aria-label="Ширина холста"
-              />
-              <span className="text-xs text-gray-700">×</span>
-              <Input
-                className="h-7 w-20 text-xs"
-                type="number"
-                value={sizeDraft.height}
-                disabled={isCanvasSizeLocked}
-                onChange={(e) => setSizeDraft((p) => ({ ...p, height: e.target.value }))}
-                onBlur={commitSizeFromDraft}
-                onKeyDown={(e) => { if (e.key === 'Enter') { commitSizeFromDraft(); } }}
-                aria-label="Высота холста"
-              />
-              <span className="text-[10px] text-gray-500">px</span>
-            </div>
-            <button
-              type="button"
-              className={`text-xs px-2 py-1 rounded transition ${
-                isCanvasSizeLocked && widgets.some(w => w.type === 'container')
-                  ? 'bg-orange-600 text-white cursor-not-allowed opacity-75'
-                  : isCanvasSizeLocked
-                    ? 'bg-orange-600 text-white hover:bg-orange-700'
-                    : 'bg-gray-900 text-white hover:bg-gray-800'
-              }`}
-              onClick={(e) => { 
-                e.stopPropagation(); 
-                // Only block if locked AND has containers (permanent lock)
-                // Allow toggle if locked but no containers (manual lock)
-                if (!(isCanvasSizeLocked && widgets.some(w => w.type === 'container'))) {
-                  dispatch(toggleCanvasSizeLock()); 
-                }
-              }}
-              disabled={isCanvasSizeLocked && widgets.some(w => w.type === 'container')}
-              aria-label={isCanvasSizeLocked ? 'Разблокировать размер холста' : 'Зафиксировать размер холста'}
-            >
-              {isCanvasSizeLocked ? (
-                widgets.some(w => w.type === 'container') 
-                  ? '🔒 Заблокировано (контейнер)' 
-                  : selectedPreset !== 'custom'
-                    ? '🔒 Заблокировано (устройство)'
-                    : '🔒 Разблокировать размер'
-              ) : '🔓 Зафиксировать размер'}
-            </button>
-          </div>
-        </div>
+        <CanvasToolbar
+          sizeDraft={sizeDraft}
+          onSizeDraftChange={handleSizeDraftChange}
+          onCommitSize={handleCommitSize}
+        />
         {/* Smartphone frame */}
-        <div
-          className="relative mx-auto"
-          style={{
-            width: (canvasSize.width * zoom) + 40,
-            height: (canvasSize.height * zoom) + 80,
-            transform: `translate(${panOffset?.x || 0}px, ${panOffset?.y || 0}px)`,
-          }}
+        <DeviceFrame
+          canvasSize={canvasSize}
+          zoom={zoom}
+          panOffset={panOffset}
+          hoveredZone={hoveredZone}
+          isDraggingWidget={isDraggingWidget}
+          onZoneHover={setHoveredZone}
         >
-          {/* Device body (black bezel is the outer layer, we attach grips to it) */}
-          <div className="absolute inset-0 rounded-[36px] bg-neutral-900 shadow-xl" />
-          <div className="absolute inset-[10px] rounded-[28px] bg-neutral-800" />
-          {/* Notch */}
-          <div className="absolute left-1/2 -translate-x-1/2 top-3 h-6 w-40 rounded-full bg-black/80" />
-
-          {/* Persistent corner arrow handle (outside body, barely touching) */}
-          <button
-            type="button"
-            className={`absolute -right-3 -bottom-3 h-6 w-6 rounded-full flex items-center justify-center shadow-md z-50 ${
-              isCanvasSizeLocked ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-primary text-white cursor-se-resize hover:scale-[1.03]'
-            }`}
-            onMouseDown={(e) => onCanvasResizeMouseDown(e, 'se')}
-            onClick={(e) => e.preventDefault()}
-            aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Потянуть из угла для изменения размера'}
-            title={isCanvasSizeLocked ? (
-              widgets.some(w => w.type === 'container') 
-                ? 'Размер заблокирован из-за контейнера' 
-                : selectedPreset !== 'custom'
-                  ? 'Размер заблокирован из-за выбранного устройства'
-                  : 'Размер зафиксирован'
-            ) : 'Потянуть из угла для изменения размера'}
-          >
-          {/* Layout zones */}
-          {/* Зоны как на макете: тонкие направляющие и подписи справа */}
-          <div className="absolute inset-0 pointer-events-none" aria-hidden>
-            {(() => {
-              const headerOffsetPx = 40 * zoom; // увеличенная зона header
-              const footerOffsetPx = 40 * zoom; // увеличенная зона footer
-              const barHeightPx = Math.max(4, 4 * zoom);
-              const sideInsetPx = Math.max(10, 12 * zoom);
-              const rightShortenPx = Math.max(24, 28 * zoom);
-              const headerBarTopPx = headerOffsetPx;
-              const footerBarTopPx = (canvasSize.height * zoom) - footerOffsetPx - barHeightPx;
-              return (
-                <>
-                  {/* Header bar */}
-                  <div className="absolute" style={{ top: headerBarTopPx, height: barHeightPx, left: sideInsetPx, right: rightShortenPx }}>
-                    <div className="w-full h-full rounded-full transition-colors duration-200" style={{ background: hoveredZone === 'header' ? '#f59e0b' : '#fde047' }} />
-                  </div>
-                  {/* Footer bar */}
-                  <div className="absolute" style={{ top: footerBarTopPx, height: barHeightPx, left: sideInsetPx, right: rightShortenPx }}>
-                    <div className="w-full h-full rounded-full transition-colors duration-200" style={{ background: hoveredZone === 'footer' ? '#ef4444' : '#f87171' }} />
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-          {/* Labels moved outside the screen, aligned to device outer right edge */}
-          {/* This block will be reinserted below, at the device container level */}
-            ↘
-          </button>
-
-          {/* Labels outside: aligned to outer bezel right edge */}
-          <div className="absolute inset-0 pointer-events-none" aria-hidden={false}>
-            <div className="absolute pointer-events-auto transition-all duration-200" style={{ top: (40 * zoom) - 10, right: -56 }} onMouseEnter={() => setHoveredZone('header')} onMouseLeave={() => setHoveredZone(null)}>
-              <div className={`inline-flex items-center h-6 px-2 rounded bg-white shadow border text-[11px] transition-all duration-200 ${hoveredZone === 'header' ? 'border-amber-500 text-amber-600 bg-amber-50 scale-105' : 'text-gray-600'}`}>Header</div>
-            </div>
-            <div className="absolute pointer-events-auto" style={{ top: (canvasSize.height * zoom) / 2 - 10, right: -56 }} onMouseEnter={() => setHoveredZone('main')} onMouseLeave={() => setHoveredZone(null)}>
-              <div className={`inline-flex items-center h-6 px-2 rounded bg-white shadow border text-[11px] transition-all duration-200 ${hoveredZone === 'main' ? 'border-blue-500 text-blue-600 bg-blue-50 scale-105' : 'text-gray-600'}`}>Main</div>
-            </div>
-            <div className="absolute pointer-events-auto transition-all duration-200" style={{ bottom: (40 * zoom) - 10, right: -56 }} onMouseEnter={() => setHoveredZone('footer')} onMouseLeave={() => setHoveredZone(null)}>
-              <div className={`inline-flex items-center h-6 px-2 rounded bg-white shadow border text-[11px] transition-all duration-200 ${hoveredZone === 'footer' ? 'border-red-500 text-red-600 bg-red-50 scale-105' : 'text-gray-600'}`}>Footer</div>
-            </div>
-          </div>
-
-          {/* Canvas screen (slightly thicker bottom bezel like DevTools) */}
-          <div 
+          <CanvasScreen
             ref={canvasRef}
-            className={`absolute left-[20px] right-[20px] top-[20px] bottom-[28px] rounded-[24px] overflow-hidden bg-white ${showGrid ? 'canvas-grid' : ''}`}
-            style={{ 
-              width: canvasSize.width * zoom,
-              height: canvasSize.height * zoom,
-              backgroundImage: showGrid ? `
-                linear-gradient(to right, #e5e7eb 1px, transparent 1px),
-                linear-gradient(to bottom, #e5e7eb 1px, transparent 1px)
-              ` : 'none',
-              backgroundSize: `${gridSize * zoom}px ${gridSize * zoom}px`,
-              backgroundPosition: `${panOffset?.x || 0}px ${panOffset?.y || 0}px`,
-            }}
-            onClick={handleCanvasClick}
+            canvasSize={canvasSize}
+            zoom={zoom}
+            panOffset={panOffset}
+            showGrid={showGrid}
+            gridSize={gridSize}
+            widgets={widgets}
+            selectedWidgetId={selectedWidgetId}
+            hoveredZone={hoveredZone}
+            isDraggingWidget={isDraggingWidget}
+            onCanvasClick={handleCanvasClick}
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onMouseDown={handleMouseDown}
             onWheel={handleWheel}
             onMouseMove={handleCanvasMouseMove}
             onMouseLeave={handleCanvasMouseLeave}
-          >
-          {/* Status bar */}
-          <div className="absolute top-0 left-0 right-0 h-7 px-4 flex items-center justify-between text-[11px] text-black/90 select-none pointer-events-none">
-            <div className="font-semibold tracking-wide">9:41</div>
-            <div className="flex items-center gap-2">
-              {/* Cellular bars */}
-              <div className="flex items-end gap-[2px]" aria-hidden>
-                <span className="block w-[2px] h-[6px] bg-black/80 rounded-sm" />
-                <span className="block w-[2px] h-[8px] bg-black/80 rounded-sm" />
-                <span className="block w-[2px] h-[10px] bg-black/80 rounded-sm" />
-                <span className="block w-[2px] h-[12px] bg-black/80 rounded-sm" />
-              </div>
-              {/* Wi‑Fi */}
-              <div className="relative w-[16px] h-[12px]" aria-hidden>
-                <span className="absolute inset-x-0 bottom-0 h-[2px] bg-black/80 rounded-sm" />
-                <span className="absolute left-1 right-1 bottom-[3px] h-[2px] bg-black/70 rounded-sm" />
-                <span className="absolute left-2 right-2 bottom-[6px] h-[2px] bg-black/50 rounded-sm" />
-              </div>
-              {/* Battery */}
-              <div className="flex items-center gap-[2px]" aria-hidden>
-                <div className="relative w-[22px] h-[12px] rounded-[3px] border border-black/80">
-                  <div className="absolute inset-[2px] bg-black/80 rounded-[2px]" />
-                </div>
-                <div className="w-[2px] h-[6px] bg-black/80 rounded-sm" />
-              </div>
-            </div>
-          </div>
-          {/* Zone overlays for drag feedback */}
-          {isDraggingWidget && (
-            <>
-              {/* Header zone overlay */}
-              <div 
-                className={`absolute left-0 right-0 top-0 transition-all duration-200 pointer-events-none ${
-                  hoveredZone === 'header' 
-                    ? 'bg-amber-200/40 border-2 border-amber-400 border-dashed' 
-                    : 'bg-amber-100/20 border border-amber-300 border-dashed'
-                }`}
-                style={{ height: 40 * zoom }}
-              >
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className={`text-xs font-medium transition-all duration-200 ${
-                    hoveredZone === 'header' ? 'text-amber-700 scale-110' : 'text-amber-600'
-                  }`}>Header Zone</span>
-                </div>
-              </div>
-              
-              {/* Footer zone overlay */}
-              <div 
-                className={`absolute left-0 right-0 bottom-0 transition-all duration-200 pointer-events-none ${
-                  hoveredZone === 'footer' 
-                    ? 'bg-red-200/40 border-2 border-red-400 border-dashed' 
-                    : 'bg-red-100/20 border border-red-300 border-dashed'
-                }`}
-                style={{ height: 40 * zoom }}
-              >
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className={`text-xs font-medium transition-all duration-200 ${
-                    hoveredZone === 'footer' ? 'text-red-700 scale-110' : 'text-red-600'
-                  }`}>Footer Zone</span>
-                </div>
-              </div>
-            </>
-          )}
+          />
           
-          {widgets
-            .filter(widget => !widget.parentId) // Only render root-level widgets
-            .map((widget) => (
-              <WidgetRenderer
-                key={widget.id}
-                widget={widget}
-                isSelected={selectedWidgetId === widget.id}
-                isEditable={true}
-              />
-            ))}
-          
-          {/* Guides for alignment - DISABLED */}
-          {/* <Guides
+          <ResizeHandles
+            isCanvasSizeLocked={isCanvasSizeLocked}
+            selectedPreset={selectedPreset}
             widgets={widgets}
-            selectedWidgetId={selectedWidgetId}
-            canvasSize={canvasSize}
-            zoom={zoom}
-            panOffset={panOffset}
-          /> */}
-          
-          {/* Drop zone indicator */}
-          <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-transparent transition-colors duration-200 ease-in-out" />
-
-
-          {/* Canvas resize handles overlay */}
-          <div className="absolute inset-0 pointer-events-none z-[9999]">
-            <div
-              className={`absolute right-0 top-0 bottom-0 w-[12px] ${isCanvasSizeLocked ? 'cursor-not-allowed' : 'cursor-e-resize'}`}
-              data-canvas-resize="e"
-              onMouseDown={(e) => onCanvasResizeMouseDown(e, 'e')}
-              title={isCanvasSizeLocked ? (
-                widgets.some(w => w.type === 'container') 
-                  ? 'Размер заблокирован из-за контейнера' 
-                  : selectedPreset !== 'custom'
-                    ? 'Размер заблокирован из-за выбранного устройства'
-                    : 'Размер зафиксирован'
-              ) : 'Потяните за правый край (рамка)'}
-              style={{ pointerEvents: 'auto' }}
-            />
-            <div
-              className={`absolute left-0 right-0 bottom-0 h-[12px] ${isCanvasSizeLocked ? 'cursor-not-allowed' : 'cursor-s-resize'}`}
-              data-canvas-resize="s"
-              onMouseDown={(e) => onCanvasResizeMouseDown(e, 's')}
-              title={isCanvasSizeLocked ? (
-                widgets.some(w => w.type === 'container') 
-                  ? 'Размер заблокирован из-за контейнера' 
-                  : selectedPreset !== 'custom'
-                    ? 'Размер заблокирован из-за выбранного устройства'
-                    : 'Размер зафиксирован'
-              ) : 'Потяните за нижний край (рамка)'}
-              style={{ pointerEvents: 'auto' }}
-            />
-            <button
-              type="button"
-              className={`absolute -right-5 -bottom-5 h-5 w-5 bg-transparent shadow-none flex items-center justify-center ${
-                isCanvasSizeLocked ? 'cursor-not-allowed opacity-60' : 'cursor-se-resize'
-              }`}
-              data-canvas-resize="se"
-              onMouseDown={(e) => onCanvasResizeMouseDown(e, 'se')}
-              onClick={(e) => e.preventDefault()}
-              aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Тянуть за угол'}
-              title={isCanvasSizeLocked ? (
-                widgets.some(w => w.type === 'container') 
-                  ? 'Размер заблокирован из-за контейнера' 
-                  : selectedPreset !== 'custom'
-                    ? 'Размер заблокирован из-за выбранного устройства'
-                    : 'Размер зафиксирован'
-              ) : 'Тянуть за угол'}
-              style={{ pointerEvents: 'auto' }}
-            >
-              <span className="relative block h-4 w-4">
-                <span className={`absolute right-0 bottom-0 h-0.5 w-3 rotate-45 ${isCanvasSizeLocked ? 'bg-gray-300' : 'bg-red-500'}`} />
-                <span className={`absolute right-0 bottom-1 h-0.5 w-2.5 rotate-45 ${isCanvasSizeLocked ? 'bg-gray-300' : 'bg-red-500'}`} />
-                <span className={`absolute right-0 bottom-2 h-0.5 w-2 rotate-45 ${isCanvasSizeLocked ? 'bg-gray-300' : 'bg-red-500'}`} />
-              </span>
-            </button>
-
-            <button
-              type="button"
-              className={`absolute -right-4 top-1/2 -translate-y-1/2 h-4 w-4 rounded-sm border border-white shadow bg-primary/90 text-white ${
-                isCanvasSizeLocked ? 'cursor-not-allowed opacity-50' : 'cursor-e-resize hover:ring-2 hover:ring-primary'
-              }`}
-              data-canvas-resize="e"
-              onMouseDown={(e) => onCanvasResizeMouseDown(e, 'e')}
-              onClick={(e) => e.preventDefault()}
-              aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Тянуть за правый край'}
-              title={isCanvasSizeLocked ? (
-                widgets.some(w => w.type === 'container') 
-                  ? 'Размер заблокирован из-за контейнера' 
-                  : selectedPreset !== 'custom'
-                    ? 'Размер заблокирован из-за выбранного устройства'
-                    : 'Размер зафиксирован'
-              ) : 'Тянуть за правый край'}
-              style={{ pointerEvents: 'auto' }}
-            />
-            <button
-              type="button"
-              className={`absolute left-1/2 -translate-x-1/2 -bottom-4 h-4 w-4 rounded-sm border border-white shadow bg-primary/90 text-white ${
-                isCanvasSizeLocked ? 'cursor-not-allowed opacity-50' : 'cursor-s-resize hover:ring-2 hover:ring-primary'
-              }`}
-              data-canvas-resize="s"
-              onMouseDown={(e) => onCanvasResizeMouseDown(e, 's')}
-              onClick={(e) => e.preventDefault()}
-              aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Тянуть за нижний край'}
-              title={isCanvasSizeLocked ? (
-                widgets.some(w => w.type === 'container') 
-                  ? 'Размер заблокирован из-за контейнера' 
-                  : selectedPreset !== 'custom'
-                    ? 'Размер заблокирован из-за выбранного устройства'
-                    : 'Размер зафиксирован'
-              ) : 'Тянуть за нижний край'}
-              style={{ pointerEvents: 'auto' }}
-            />
-            <button
-              type="button"
-              className={`absolute -right-5 -bottom-5 h-5 w-5 rounded-sm border border-white shadow bg-primary/90 text-white flex items-center justify-center ${
-                isCanvasSizeLocked ? 'cursor-not-allowed opacity-50' : 'cursor-se-resize hover:ring-2 hover:ring-primary'
-              }`}
-              data-canvas-resize="se"
-              onMouseDown={(e) => onCanvasResizeMouseDown(e, 'se')}
-              onClick={(e) => e.preventDefault()}
-              aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Тянуть за угол'}
-              title={isCanvasSizeLocked ? (
-                widgets.some(w => w.type === 'container') 
-                  ? 'Размер заблокирован из-за контейнера' 
-                  : selectedPreset !== 'custom'
-                    ? 'Размер заблокирован из-за выбранного устройства'
-                    : 'Размер зафиксирован'
-              ) : 'Тянуть за угол'}
-              style={{ pointerEvents: 'auto' }}
-            >
-              ↘
-            </button>
-          </div>
-
-          {/* Visible resize hint button at the bottom-right corner */}
-          <button
-            type="button"
-            className={`absolute -right-6 -bottom-6 z-40 h-8 w-8 rounded-full shadow-md flex items-center justify-center transition ${
-              isCanvasSizeLocked ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-primary text-white cursor-se-resize hover:scale-105'
-            }`}
-            onMouseDown={(e) => onCanvasResizeMouseDown(e, 'se')}
-            onClick={(e) => e.preventDefault()}
-            aria-label={isCanvasSizeLocked ? 'Размер зафиксирован' : 'Потянуть для изменения размера'}
-            title={isCanvasSizeLocked ? (
-              widgets.some(w => w.type === 'container') 
-                ? 'Размер заблокирован из-за контейнера' 
-                : selectedPreset !== 'custom'
-                  ? 'Размер заблокирован из-за выбранного устройства'
-                  : 'Размер зафиксирован'
-            ) : 'Потяните, чтобы изменить размер'}
-          >
-            ↘
-          </button>
-        </div>
+            onCanvasResizeMouseDown={onCanvasResizeMouseDown}
+          />
+        </DeviceFrame>
       </div>
     </div>
-  </div>
   );
 }
