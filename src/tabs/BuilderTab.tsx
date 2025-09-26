@@ -160,7 +160,7 @@ export function BuilderTab() {
         {viewMode === 'design' && (
           <div className="w-96 border-r border-border bg-card flex flex-col h-full">
             {/* Components Tree */}
-            <div className="flex-1 p-4 border-b min-h-[400px] max-h-[60vh] overflow-hidden">
+            <div className="flex-1 p-4 border-b min-h-[400px] max-h-[60vh] overflow-y-auto">
               <ComponentsTree />
             </div>
             

@@ -539,8 +539,8 @@ const handleMoveToRoot = (widgetId: string) => {
       <CardHeader className="pb-3 flex-shrink-0">
         <CardTitle className="text-lg">Дерево компонентов</CardTitle>
       </CardHeader>
-      <CardContent className="p-0 flex-1 overflow-y-auto min-h-0">
-        <div className="space-y-1 min-w-0 p-2">
+      <CardContent className="p-0 flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+        <div className="space-y-1 min-w-0 p-2 max-h-full">
           {/* Tree nodes */}
           {renderTree(null)}
         </div>
