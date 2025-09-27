@@ -3,12 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { 
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -18,7 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Edit, Trash2, MoreHorizontal, Calendar } from 'lucide-react';
+import { Edit, Trash2, Calendar } from 'lucide-react';
 import { IUserWidget } from '../../features/userWidgets/userWidgetsSlice';
 
 interface UserWidgetsListProps {
@@ -56,13 +50,13 @@ export function UserWidgetsList({ widgets, onEdit, onDelete }: UserWidgetsListPr
 
   if (widgets.length === 0) {
     return (
-      <div className="text-center py-8">
-        <div className="w-12 h-12 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
-          <Edit className="h-6 w-6 text-muted-foreground" />
+      <div className="text-center py-12">
+        <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl flex items-center justify-center">
+          <Edit className="h-8 w-8 text-primary" />
         </div>
-        <h3 className="text-lg font-medium mb-2">Нет сохраненных виджетов</h3>
-        <p className="text-sm text-muted-foreground">
-          Создайте и сохраните виджет в Конструкторе виджетов
+        <h3 className="text-xl font-semibold mb-3 text-foreground">Нет сохраненных виджетов</h3>
+        <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
+          Создайте и сохраните виджет в Конструкторе виджетов, чтобы он появился здесь
         </p>
       </div>
     );
@@ -72,7 +66,7 @@ export function UserWidgetsList({ widgets, onEdit, onDelete }: UserWidgetsListPr
     <>
       <div className="space-y-4">
         {widgets.map((widget) => (
-          <Card key={widget.id} className="hover:shadow-md transition-shadow">
+          <Card key={widget.id} className="hover:shadow-lg transition-all duration-200 border-0 bg-gradient-to-br from-white to-gray-50/50 hover:from-white hover:to-primary/5">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -83,41 +77,41 @@ export function UserWidgetsList({ widgets, onEdit, onDelete }: UserWidgetsListPr
                     </CardDescription>
                   )}
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEdit(widget)}>
-                      <Edit className="h-4 w-4 mr-2" />
-                      Редактировать
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => handleDeleteClick(widget.id)}
-                      className="text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Удалить
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex items-center gap-1 ml-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEdit(widget)}
+                    className="h-9 w-9 p-0 rounded-full hover:bg-primary/10 hover:text-primary transition-all duration-200 hover:scale-105"
+                    title="Редактировать виджет"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteClick(widget.id)}
+                    className="h-9 w-9 p-0 rounded-full hover:bg-destructive/10 hover:text-destructive transition-all duration-200 hover:scale-105"
+                    title="Удалить виджет"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-md">
                     <Calendar className="h-3 w-3" />
                     <span>{formatDate(widget.createdAt)}</span>
                   </div>
-                  <Badge variant="secondary">
+                  <Badge variant="secondary" className="text-xs">
                     {widget.widgets.length} компонент{widget.widgets.length !== 1 ? 'ов' : ''}
                   </Badge>
                 </div>
-                <div className="text-xs">
-                  {widget.canvasSize.width}×{widget.canvasSize.height}
+                <div className="text-xs text-muted-foreground bg-muted/30 px-2 py-1 rounded-md font-mono">
+                  {widget.canvasSize.width}×{widget.canvasSize.height}px
                 </div>
               </div>
             </CardContent>
