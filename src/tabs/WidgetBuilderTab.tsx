@@ -9,7 +9,7 @@ import { useToast } from '../hooks/use-toast';
 import { loadWidgets, addWidget, setCanvasSize, setSelectedPreset } from '../features/widgetBuilder/widgetBuilderSlice';
 import { loadUserWidgets, updateUserWidget, saveUserWidget } from '../features/userWidgets/userWidgetsSlice';
 import { widgetDefinitions, createDefaultWidget } from '../lib/widgetDefaults';
-import { convertWidgetsToScreenJson, convertScreenJsonToWidgets } from '../lib/jsonConverter';
+import { convertWidgetsToScreenJson, convertScreenJsonToWidgets, convertWidgetsToContentJson } from '../lib/jsonConverter';
 import { WidgetBuilderToolbar } from '../components/builder/WidgetBuilderToolbar';
 import { BuilderCanvas } from '../components/builder/BuilderCanvas';
 import { WidgetBuilderPropertiesPanel } from '../components/builder/WidgetBuilderPropertiesPanel';
@@ -91,16 +91,16 @@ export function WidgetBuilderTab() {
 
   const exportJson = useCallback(() => {
     try {
-      console.log('exportJson called with:', { canvasSize, selectedPreset });
-      // Преобразуем виджеты в новую структуру экрана
-      const screenJson = convertWidgetsToScreenJson(widgets, canvasSize, selectedPreset);
-      console.log('Generated screenJson:', screenJson);
-      return JSON.stringify(screenJson, null, 2);
+      console.log('exportJson called with widgets count:', widgets.length);
+      // Для Конструктора виджетов экспортируем только содержимое
+      const contentJson = convertWidgetsToContentJson(widgets);
+      console.log('Generated contentJson:', contentJson);
+      return JSON.stringify(contentJson, null, 2);
     } catch (error) {
       console.error('Ошибка при экспорте JSON:', error);
       return JSON.stringify({ error: 'Ошибка при экспорте JSON' }, null, 2);
     }
-  }, [widgets, canvasSize, selectedPreset]);
+  }, [widgets]);
 
   const handleWidgetClick = (widgetType: string) => {
     // Добавляем виджет в центр текущего холста
@@ -159,13 +159,9 @@ export function WidgetBuilderTab() {
 
   // Вычисляем JSON с помощью useMemo для лучшей производительности
   const computedJson = useMemo(() => {
-    console.log('Computing JSON with:', { 
-      widgetsCount: widgets.length, 
-      canvasSize, 
-      selectedPreset 
-    });
+    console.log('Computing JSON with widgets count:', widgets.length);
     return exportJson();
-  }, [widgets, canvasSize, selectedPreset, exportJson]);
+  }, [widgets, exportJson]);
 
   // Update JSON when computedJson changes
   useLayoutEffect(() => {
@@ -173,35 +169,6 @@ export function WidgetBuilderTab() {
     setJsonValue(computedJson);
   }, [computedJson]);
 
-  // Дополнительный useEffect для обработки изменений selectedPreset с задержкой
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      console.log('Delayed JSON update for selectedPreset:', selectedPreset);
-      setJsonValue(exportJson());
-    }, 100);
-    
-    return () => clearTimeout(timeoutId);
-  }, [selectedPreset, exportJson]);
-
-  // Еще один useEffect с requestAnimationFrame для гарантии обновления
-  useEffect(() => {
-    const rafId = requestAnimationFrame(() => {
-      console.log('RAF JSON update for selectedPreset:', selectedPreset);
-      setJsonValue(exportJson());
-    });
-    
-    return () => cancelAnimationFrame(rafId);
-  }, [selectedPreset, exportJson]);
-
-  // Финальный useEffect с длительной задержкой для гарантии обновления
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      console.log('Final JSON update for selectedPreset:', selectedPreset);
-      setJsonValue(exportJson());
-    }, 500);
-    
-    return () => clearTimeout(timeoutId);
-  }, [selectedPreset, exportJson]);
 
   return (
     <div className="flex-1 flex flex-col h-full">

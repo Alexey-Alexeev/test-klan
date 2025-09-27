@@ -16,6 +16,8 @@ export interface Style {
   borderRadius?: number;
   border?: string;
   margin?: string | { top?: number; bottom?: number; left?: number; right?: number };
+  width?: string | number;
+  height?: string | number;
 }
 
 export interface Action {
@@ -166,7 +168,7 @@ function widgetToContentElement(widget: IWidget, allWidgets: IWidget[]): Content
             `${containerWidget.props.border.width}px ${containerWidget.props.border.style} ${containerWidget.props.border.color}` : 
             '1px dashed #ccc',
           borderRadius: containerWidget.props.border?.radius ? 
-            `${containerWidget.props.border.radius.topLeft}px` : 8
+            containerWidget.props.border.radius.topLeft : 8
         },
         content: children.map(childId => {
           const childWidget = getWidgetById(childId, allWidgets);
@@ -229,25 +231,29 @@ export function convertWidgetsToScreenJson(widgets: IWidget[], canvasSize?: { wi
             padding: 16,
             content: []
           },
-          footer: {}
+          footer: {
+            type: 'row',
+            content: []
+          }
         }
       }
     };
 
     // Добавляем информацию о размере canvas, если она предоставлена
     console.log('convertWidgetsToScreenJson (empty widgets) - canvasSize:', canvasSize, 'selectedPreset:', selectedPreset);
+    const result: ScreenJson = emptyScreenJson as ScreenJson;
     if (canvasSize) {
-      emptyScreenJson.canvasSize = {
+      result.canvasSize = {
         width: canvasSize.width,
         height: canvasSize.height,
         device: selectedPreset || 'custom'
       };
-      console.log('Added canvasSize to empty screen JSON:', emptyScreenJson.canvasSize);
+      console.log('Added canvasSize to empty screen JSON:', result.canvasSize);
     } else {
       console.log('canvasSize is falsy, not adding to empty screen JSON');
     }
 
-    return emptyScreenJson;
+    return result;
   }
   
   // Находим корневые виджеты (без parentId)
@@ -289,7 +295,10 @@ export function convertWidgetsToScreenJson(widgets: IWidget[], canvasSize?: { wi
     type: 'screen',
     header,
     content,
-    footer: {}
+    footer: {
+      type: 'row',
+      content: []
+    }
   };
 
   // Создаем финальную JSON структуру
@@ -338,7 +347,7 @@ export function convertScreenJsonToWidgets(screenJson: ScreenJson): { widgets: I
   function contentElementToWidget(element: ContentElement): IWidget {
     const widgetId = `widget_${element.type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    const baseWidget: IWidget = {
+    const baseWidget = {
       id: widgetId,
       type: element.type as any,
       position: { 
@@ -350,7 +359,15 @@ export function convertScreenJsonToWidgets(screenJson: ScreenJson): { widgets: I
         height: element.height || 50 
       },
       zIndex: 1,
-      style: element.style || {},
+      style: {
+        ...element.style,
+        fontWeight: element.style?.fontWeight?.toString() || undefined,
+        margin: typeof element.style?.margin === 'object' 
+          ? `${element.style.margin.top || 0}px ${element.style.margin.right || 0}px ${element.style.margin.bottom || 0}px ${element.style.margin.left || 0}px`
+          : element.style?.margin,
+        width: element.style?.width?.toString() || undefined,
+        height: element.style?.height?.toString() || undefined
+      },
       parentId: undefined // Корневые виджеты не имеют родителя
     };
 
@@ -407,7 +424,10 @@ export function convertScreenJsonToWidgets(screenJson: ScreenJson): { widgets: I
         } as IContainerWidget;
 
       default:
-        return baseWidget;
+        return {
+          ...baseWidget,
+          props: { text: 'Unknown widget' }
+        } as IWidget;
     }
   }
 
@@ -436,4 +456,30 @@ export function convertScreenJsonToWidgets(screenJson: ScreenJson): { widgets: I
     } : undefined,
     selectedPreset: screenJson.canvasSize?.device
   };
+}
+
+// Функция для экспорта только содержимого виджетов (для Конструктора виджетов)
+export function convertWidgetsToContentJson(widgets: IWidget[]): ContentElement {
+  // Проверяем, что массив виджетов не пустой
+  if (!widgets || widgets.length === 0) {
+    return {
+      type: 'column_scroll',
+      gap: 16,
+      padding: 16,
+      content: []
+    };
+  }
+  
+  // Находим корневые виджеты (без parentId)
+  const rootWidgets = widgets.filter(w => !w.parentId);
+  
+  // Создаем основной контент
+  const content: ContentElement = {
+    type: 'column_scroll',
+    gap: 16,
+    padding: 16,
+    content: rootWidgets.map(widget => widgetToContentElement(widget, widgets))
+  };
+
+  return content;
 }
