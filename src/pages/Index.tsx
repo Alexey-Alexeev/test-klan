@@ -1,6 +1,7 @@
 import { useAppSelector } from '../store/hooks';
 import { TabNavigation } from '../components/navigation/TabNavigation';
 import { BuilderTab } from '../tabs/BuilderTab';
+import { WidgetBuilderTab } from '../tabs/WidgetBuilderTab';
 import { WidgetsTab } from '../tabs/WidgetsTab';
 import { TemplatesTab } from '../tabs/TemplatesTab';
 
@@ -11,6 +12,8 @@ const Index = () => {
     switch (activeTab) {
       case 'builder':
         return <BuilderTab />;
+      case 'widgetBuilder':
+        return <WidgetBuilderTab />;
       case 'widgets':
         return <WidgetsTab />;
       case 'templates':

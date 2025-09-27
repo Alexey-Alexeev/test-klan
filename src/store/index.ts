@@ -8,11 +8,12 @@ import canvasSlice from '../features/canvas/canvasSlice';
 import templatesSlice from '../features/templates/templatesSlice';
 import appSlice from '../features/app/appSlice';
 import historySlice from '../features/history/historySlice';
+import widgetBuilderSlice from '../features/widgetBuilder/widgetBuilderSlice';
 
 const persistConfig = {
   key: 'main-builder',
   storage,
-  whitelist: ['canvas', 'templates'], // Only persist canvas and templates
+  whitelist: ['canvas', 'templates', 'widgetBuilder'], // Only persist canvas, templates and widgetBuilder
 };
 
 const rootReducer = combineReducers({
@@ -20,6 +21,7 @@ const rootReducer = combineReducers({
   templates: templatesSlice,
   app: appSlice,
   history: historySlice,
+  widgetBuilder: widgetBuilderSlice,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

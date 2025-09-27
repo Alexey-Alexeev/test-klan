@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Monitor, Layers, Bookmark } from 'lucide-react';
+import { Monitor, Layers, Bookmark, Wrench } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { setActiveTab } from '../../features/app/appSlice';
 
@@ -10,6 +10,12 @@ const tabs = [
     name: 'Конструктор',
     icon: Monitor,
     description: 'Создание макетов на холсте',
+  },
+  {
+    id: 'widgetBuilder' as const,
+    name: 'Конструктор виджетов',
+    icon: Wrench,
+    description: 'Создание и редактирование виджетов',
   },
   {
     id: 'widgets' as const,
@@ -72,6 +78,7 @@ export function TabNavigation() {
         <div className="ml-auto flex items-center gap-4">
           <div className="text-sm text-muted-foreground">
             {activeTab === 'builder' && 'Перетащите элементы на холст'}
+            {activeTab === 'widgetBuilder' && 'Создание и редактирование виджетов'}
             {activeTab === 'widgets' && 'Выберите компонент для добавления'}
             {activeTab === 'templates' && 'Управление сохраненными макетами'}
           </div>

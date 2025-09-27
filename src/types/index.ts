@@ -333,7 +333,7 @@ export interface HistoryState {
 
 // App state
 export interface AppState {
-  activeTab: 'builder' | 'widgets' | 'templates';
+  activeTab: 'builder' | 'widgetBuilder' | 'widgets' | 'templates';
   viewMode: 'design' | 'json';
   isPropertiesPanelOpen: boolean;
   sidebarCollapsed: boolean;
@@ -343,6 +343,7 @@ export interface AppState {
 // Root state
 export interface RootState {
   canvas: CanvasState;
+  widgetBuilder: CanvasState;
   templates: TemplatesState;
   app: AppState;
   history: HistoryState;

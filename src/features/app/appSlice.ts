@@ -13,7 +13,7 @@ const appSlice = createSlice({
   name: 'app',
   initialState,
   reducers: {
-    setActiveTab: (state, action: PayloadAction<'builder' | 'widgets' | 'templates'>) => {
+    setActiveTab: (state, action: PayloadAction<'builder' | 'widgetBuilder' | 'widgets' | 'templates'>) => {
       state.activeTab = action.payload;
     },
 
