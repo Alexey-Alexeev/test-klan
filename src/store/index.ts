@@ -9,6 +9,7 @@ import templatesSlice from '../features/templates/templatesSlice';
 import appSlice from '../features/app/appSlice';
 import historySlice from '../features/history/historySlice';
 import widgetBuilderSlice from '../features/widgetBuilder/widgetBuilderSlice';
+import userWidgetsSlice from '../features/userWidgets/userWidgetsSlice';
 
 const persistConfig = {
   key: 'main-builder',
@@ -22,6 +23,7 @@ const rootReducer = combineReducers({
   app: appSlice,
   history: historySlice,
   widgetBuilder: widgetBuilderSlice,
+  userWidgets: userWidgetsSlice,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

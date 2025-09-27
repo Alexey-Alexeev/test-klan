@@ -1,11 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search } from 'lucide-react';
 import * as icons from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { widgetDefinitions } from '../lib/widgetDefaults';
 import { WidgetDefinition } from '../types';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { loadUserWidgets, deleteUserWidget } from '../features/userWidgets/userWidgetsSlice';
+import { loadWidgets, setCanvasSize, setSelectedPreset } from '../features/widgetBuilder/widgetBuilderSlice';
+import { setActiveTab } from '../features/app/appSlice';
+import { UserWidgetsList } from '../components/ui/user-widgets-list';
 
 const getIcon = (name: string): React.ComponentType<any> => {
   const Icon = icons[name as keyof typeof icons] as unknown as React.ComponentType<any> | undefined;
@@ -13,6 +19,8 @@ const getIcon = (name: string): React.ComponentType<any> => {
 };
 
 export function WidgetsTab() {
+  const dispatch = useAppDispatch();
+  const { widgets: userWidgets } = useAppSelector(state => state.userWidgets);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
@@ -25,6 +33,25 @@ export function WidgetsTab() {
 
   const handleDragStart = (e: React.DragEvent, widgetType: string) => {
     e.dataTransfer.setData('widget-type', widgetType);
+  };
+
+  // Загружаем пользовательские виджеты при монтировании компонента
+  useEffect(() => {
+    dispatch(loadUserWidgets());
+  }, [dispatch]);
+
+  const handleEditUserWidget = (widget: any) => {
+    // Загружаем виджет в конструктор и переходим к редактированию
+    dispatch(loadWidgets(widget.widgets));
+    dispatch(setCanvasSize(widget.canvasSize));
+    dispatch(setSelectedPreset(widget.selectedPreset));
+    dispatch(setActiveTab('widgetBuilder'));
+    // Устанавливаем ID виджета для редактирования в localStorage
+    localStorage.setItem('editingWidgetId', widget.id);
+  };
+
+  const handleDeleteUserWidget = (id: string) => {
+    dispatch(deleteUserWidget(id));
   };
 
   const categories = [
@@ -44,39 +71,47 @@ export function WidgetsTab() {
             <h1 className="text-2xl font-semibold text-foreground">Библиотека компонентов</h1>
             <p className="text-muted-foreground">Перетащите элементы на холст для создания интерфейса</p>
           </div>
-
-          {/* Search and filters */}
-          <div className="flex gap-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Поиск компонентов..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <div className="flex rounded-lg bg-white border p-1">
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                    selectedCategory === category.id
-                      ? 'bg-primary text-white'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {category.name}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
-        {/* Widgets grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {/* Tabs */}
+        <Tabs defaultValue="library" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="library">Библиотека</TabsTrigger>
+            <TabsTrigger value="created">Созданные виджеты</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="library" className="space-y-6">
+            {/* Search and filters */}
+            <div className="flex gap-4">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Поиск компонентов..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              
+              <div className="flex rounded-lg bg-white border p-1">
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => setSelectedCategory(category.id)}
+                    className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                      selectedCategory === category.id
+                        ? 'bg-primary text-white'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Widgets grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredWidgets.map((widget) => {
             const Icon = getIcon(widget.icon);
             const isButton = widget.type === 'button';
@@ -141,31 +176,41 @@ export function WidgetsTab() {
           })}
         </div>
 
-        {filteredWidgets.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-muted-foreground">
-              <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium mb-2">Компоненты не найдены</p>
-              <p>Попробуйте изменить поисковый запрос или фильтры</p>
-            </div>
-          </div>
-        )}
+            {filteredWidgets.length === 0 && (
+              <div className="text-center py-12">
+                <div className="text-muted-foreground">
+                  <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium mb-2">Компоненты не найдены</p>
+                  <p>Попробуйте изменить поисковый запрос или фильтры</p>
+                </div>
+              </div>
+            )}
 
-        {/* Usage hint */}
-        <div className="mt-8 p-4 bg-primary/5 border border-primary/20 rounded-lg">
-          <div className="flex items-start gap-3">
-            <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-sm font-medium mt-0.5">
-              i
+            {/* Usage hint */}
+            <div className="mt-8 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-sm font-medium mt-0.5">
+                  i
+                </div>
+                <div>
+                  <p className="font-medium text-foreground mb-1">Как использовать:</p>
+                  <p className="text-sm text-muted-foreground">
+                    Перетащите любой компонент из библиотеки на холст конструктора. 
+                    После размещения вы сможете настроить его свойства в панели справа.
+                  </p>
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Как использовать:</p>
-              <p className="text-sm text-muted-foreground">
-                Перетащите любой компонент из библиотеки на холст конструктора. 
-                После размещения вы сможете настроить его свойства в панели справа.
-              </p>
-            </div>
-          </div>
-        </div>
+          </TabsContent>
+
+          <TabsContent value="created" className="space-y-6">
+            <UserWidgetsList
+              widgets={userWidgets}
+              onEdit={handleEditUserWidget}
+              onDelete={handleDeleteUserWidget}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

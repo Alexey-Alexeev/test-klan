@@ -7,9 +7,10 @@ import * as icons from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { useToast } from '../hooks/use-toast';
 import { loadWidgets, addWidget, setCanvasSize, setSelectedPreset } from '../features/widgetBuilder/widgetBuilderSlice';
+import { loadUserWidgets, updateUserWidget, saveUserWidget } from '../features/userWidgets/userWidgetsSlice';
 import { widgetDefinitions, createDefaultWidget } from '../lib/widgetDefaults';
 import { convertWidgetsToScreenJson, convertScreenJsonToWidgets } from '../lib/jsonConverter';
-import { Toolbar } from '../components/builder/Toolbar';
+import { WidgetBuilderToolbar } from '../components/builder/WidgetBuilderToolbar';
 import { BuilderCanvas } from '../components/builder/BuilderCanvas';
 import { WidgetBuilderPropertiesPanel } from '../components/builder/WidgetBuilderPropertiesPanel';
 import { WidgetBuilderComponentsTree } from '../components/builder/WidgetBuilderComponentsTree';
@@ -23,6 +24,16 @@ export function WidgetBuilderTab() {
   const mainAreaRef = useRef<HTMLDivElement>(null);
   const [jsonValue, setJsonValue] = useState('');
   const [jsonError, setJsonError] = useState('');
+  const [editingWidgetId, setEditingWidgetId] = useState<string | null>(null);
+
+  // Проверяем localStorage для режима редактирования при монтировании
+  useEffect(() => {
+    const savedEditingId = localStorage.getItem('editingWidgetId');
+    if (savedEditingId) {
+      setEditingWidgetId(savedEditingId);
+      localStorage.removeItem('editingWidgetId'); // Очищаем после использования
+    }
+  }, []);
 
   const handleJsonImport = () => {
     try {
@@ -103,6 +114,49 @@ export function WidgetBuilderTab() {
     if (widget) dispatch(addWidget(widget));
   };
 
+  // Функция для загрузки виджета для редактирования
+  const loadWidgetForEditing = (widgetId: string) => {
+    setEditingWidgetId(widgetId);
+    // Виджет уже загружен в состояние widgetBuilder
+  };
+
+  // Обновляем функцию сохранения, чтобы она учитывала редактирование
+  const handleSaveWidget = (name: string, description: string) => {
+    if (editingWidgetId) {
+      // Обновляем существующий виджет
+      dispatch(updateUserWidget({
+        id: editingWidgetId,
+        updates: {
+          name,
+          description,
+          widgets,
+          canvasSize,
+          selectedPreset,
+        }
+      }));
+      setEditingWidgetId(null);
+      toast({
+        title: "Виджет обновлен",
+        description: "Виджет успешно обновлен",
+        duration: 2000,
+      });
+    } else {
+      // Создаем новый виджет
+      dispatch(saveUserWidget({
+        name,
+        description,
+        widgets,
+        canvasSize,
+        selectedPreset,
+      }));
+      toast({
+        title: "Виджет сохранен",
+        description: "Виджет успешно сохранен",
+        duration: 2000,
+      });
+    }
+  };
+
   // Вычисляем JSON с помощью useMemo для лучшей производительности
   const computedJson = useMemo(() => {
     console.log('Computing JSON with:', { 
@@ -152,7 +206,7 @@ export function WidgetBuilderTab() {
   return (
     <div className="flex-1 flex flex-col h-full">
       {/* Toolbar */}
-      <Toolbar />
+      <WidgetBuilderToolbar onSaveWidget={handleSaveWidget} />
       
       {/* Main content area */}
       <div className="flex-1 flex overflow-hidden">
