@@ -14,6 +14,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Edit, Trash2, Calendar } from 'lucide-react';
 import { IUserWidget } from '../../features/userWidgets/userWidgetsSlice';
+import { UnsavedChangesDialog } from './unsaved-changes-dialog';
+import { useUnsavedChanges } from '../../hooks/use-unsaved-changes';
 
 interface UserWidgetsListProps {
   widgets: IUserWidget[];
@@ -24,6 +26,10 @@ interface UserWidgetsListProps {
 export function UserWidgetsList({ widgets, onEdit, onDelete }: UserWidgetsListProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [widgetToDelete, setWidgetToDelete] = useState<string | null>(null);
+  const [unsavedChangesDialogOpen, setUnsavedChangesDialogOpen] = useState(false);
+  const [pendingEditWidget, setPendingEditWidget] = useState<IUserWidget | null>(null);
+  
+  const { hasUnsavedChanges } = useUnsavedChanges();
 
   const handleDeleteClick = (id: string) => {
     setWidgetToDelete(id);
@@ -36,6 +42,28 @@ export function UserWidgetsList({ widgets, onEdit, onDelete }: UserWidgetsListPr
       setDeleteDialogOpen(false);
       setWidgetToDelete(null);
     }
+  };
+
+  const handleEditClick = (widget: IUserWidget) => {
+    if (hasUnsavedChanges) {
+      setPendingEditWidget(widget);
+      setUnsavedChangesDialogOpen(true);
+    } else {
+      onEdit(widget);
+    }
+  };
+
+  const handleUnsavedChangesConfirm = () => {
+    if (pendingEditWidget) {
+      onEdit(pendingEditWidget);
+      setPendingEditWidget(null);
+    }
+    setUnsavedChangesDialogOpen(false);
+  };
+
+  const handleUnsavedChangesCancel = () => {
+    setPendingEditWidget(null);
+    setUnsavedChangesDialogOpen(false);
   };
 
   const formatDate = (dateString: string) => {
@@ -81,7 +109,7 @@ export function UserWidgetsList({ widgets, onEdit, onDelete }: UserWidgetsListPr
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onEdit(widget)}
+                    onClick={() => handleEditClick(widget)}
                     className="h-9 w-9 p-0 rounded-full hover:bg-primary/10 hover:text-primary transition-all duration-200 hover:scale-105"
                     title="Редактировать виджет"
                   >
@@ -135,6 +163,13 @@ export function UserWidgetsList({ widgets, onEdit, onDelete }: UserWidgetsListPr
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <UnsavedChangesDialog
+        open={unsavedChangesDialogOpen}
+        onOpenChange={setUnsavedChangesDialogOpen}
+        onConfirm={handleUnsavedChangesConfirm}
+        onCancel={handleUnsavedChangesCancel}
+      />
     </>
   );
 }
